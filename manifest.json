@@ -1,9 +1,10 @@
 {
+  "id": "/Pilot-tidsregistrering/medarbejder",
   "name": "Pilot Tidsregistrering",
   "short_name": "Tidsreg",
   "description": "Tidsregistrering for Pakkepiloten medarbejdere",
-  "start_url": "medarbejder-tidsregistrering.html",
-  "scope": "/Pilot-tidsregistrering/",
+  "start_url": "/Pilot-tidsregistrering/medarbejder-tidsregistrering.html",
+  "scope": "/Pilot-tidsregistrering/medarbejder-tidsregistrering.html",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#4f8ef7",

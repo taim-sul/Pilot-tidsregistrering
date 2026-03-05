@@ -1,9 +1,10 @@
 {
+  "id": "/Pilot-tidsregistrering/admin",
   "name": "Pilot Admin",
   "short_name": "Pilot Admin",
   "description": "Arbejdsgiver administration for Pakkepiloten",
-  "start_url": "arbejdsgiver-tidsregistrering.html",
-  "scope": "/Pilot-tidsregistrering/",
+  "start_url": "/Pilot-tidsregistrering/arbejdsgiver-tidsregistrering.html",
+  "scope": "/Pilot-tidsregistrering/arbejdsgiver-tidsregistrering.html",
   "display": "standalone",
   "background_color": "#1e3a8a",
   "theme_color": "#2563eb",

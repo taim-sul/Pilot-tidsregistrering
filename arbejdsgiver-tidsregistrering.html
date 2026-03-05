@@ -711,7 +711,10 @@ function showToast(msg){var t=document.getElementById('toast');t.textContent=msg
 // ── PWA Service Worker ────────────────────────────────────
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw-arbejdsgiver.js', {scope: './'}).catch(function(e){console.log('SW fejl:',e);});
+    navigator.serviceWorker.register('sw-arbejdsgiver.js', {scope: '/Pilot-tidsregistrering/arbejdsgiver-tidsregistrering.html'}).catch(function(e){
+      // Fallback uden scope
+      navigator.serviceWorker.register('sw-arbejdsgiver.js').catch(function(e2){console.log('SW fejl:',e2);});
+    });
   });
 }
 </script>
