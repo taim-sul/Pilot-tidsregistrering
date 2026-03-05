@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Pilot Admin">
 <meta name="theme-color" content="#2563eb">
-<link rel="manifest" href="manifest-arbejdsgiver.json">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-admin-192.png">
 <title>Tidsregistrering – Arbejdsgiver</title>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
@@ -711,10 +711,7 @@ function showToast(msg){var t=document.getElementById('toast');t.textContent=msg
 // ── PWA Service Worker ────────────────────────────────────
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw-arbejdsgiver.js', {scope: '/Pilot-tidsregistrering/arbejdsgiver-tidsregistrering.html'}).catch(function(e){
-      // Fallback uden scope
-      navigator.serviceWorker.register('sw-arbejdsgiver.js').catch(function(e2){console.log('SW fejl:',e2);});
-    });
+    navigator.serviceWorker.register('sw.js', {scope: '/Pilot-tidsregistrering/admin/'}).catch(function(e){console.log('SW fejl:',e);});
   });
 }
 </script>
