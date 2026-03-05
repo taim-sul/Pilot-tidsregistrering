@@ -195,7 +195,8 @@ tr:last-child td{border-bottom:none}
 <div id="addEmpModal" class="modal-overlay" style="display:none">
   <div class="modal">
     <h3>Tilføj medarbejder</h3>
-    <div class="form-group"><label>Fulde navn</label><input type="text" id="newName" placeholder="Fornavn Efternavn"></div>
+    <div class="form-group"><label>Medarbejdernr.</label><input type="text" id="newEmpNo" placeholder="F.eks. 001" inputmode="numeric"></div>
+    <div class="form-group" style="margin-top:10px"><label>Fulde navn</label><input type="text" id="newName" placeholder="Fornavn Efternavn"></div>
     <div class="form-group" style="margin-top:10px"><label>Brugernavn</label><input type="text" id="newUser" placeholder="fornavn.efternavn" autocapitalize="none" autocorrect="off"></div>
     <div class="form-group" style="margin-top:10px"><label>Adgangskode</label><input type="password" id="newPass"></div>
     <div class="form-group" style="margin-top:10px"><label>Type</label>
@@ -254,9 +255,7 @@ function getAdmin(){var s=gs();if(!s.admin){s.admin={username:'admin',password:'
 function getSettings(){var s=gs();if(!s.settings){s.settings={normalHours:7.4,ot1:2,ot2:3};ss(s);}return s.settings;}
 function getEmployees(){
   var s=gs();
-  if(!s.employees||s.employees.length===0){
-    s.employees=[{username:'medarbejder1',name:'Lars Hansen',type:'fuldtid',role:'Fuldtid'},{username:'medarbejder2',name:'Maria Jensen',type:'deltid',role:'Deltid'}];ss(s);
-  }
+  if(!s.employees){s.employees=[];ss(s);}
   return s.employees;
 }
 
@@ -582,13 +581,19 @@ function exportPDF(){
 // ── Employees ─────────────────────────────────────────────
 function renderEmployees(){
   var emps=getEmployees();
-  if(!emps.length){document.getElementById('empList').innerHTML='<p style="color:#9ca3af">Ingen medarbejdere.</p>';return;}
-  var html='<div class="table-wrap"><table><thead><tr><th>Navn</th><th>Brugernavn</th><th>Type</th><th>Handling</th></tr></thead><tbody>'+
-    emps.map(function(e){return'<tr><td><strong>'+e.name+'</strong></td><td style="font-size:12px;color:#6b7280">'+e.username+'</td>'+
+  if(!emps.length){document.getElementById('empList').innerHTML='<p style="color:#9ca3af;font-size:14px">Ingen medarbejdere endnu. Tryk "Tilføj medarbejder" for at komme i gang.</p>';return;}
+  var html='<div class="table-wrap"><table><thead><tr><th>Nr.</th><th>Navn</th><th>Brugernavn</th><th>Type</th><th>Handling</th></tr></thead><tbody>'+
+    emps.map(function(e){return'<tr>'+
+      '<td><strong style="color:#2563eb">'+(e.empNo||'–')+'</strong></td>'+
+      '<td><strong>'+e.name+'</strong></td>'+
+      '<td style="font-size:12px;color:#6b7280">'+e.username+'</td>'+
       '<td><span class="tag tag-'+e.type+'">'+(e.type==='deltid'?'Deltid':'Fuldtid')+'</span></td>'+
-      '<td><div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="exportLicense(\''+e.username+'\')">📲 Login-fil</button>'+
-      '<button class="btn btn-danger btn-sm" onclick="removeEmp(\''+e.username+'\')">Fjern</button></div></td></tr>';}).join('')+
-    '</tbody></table></div><div class="alert alert-info" style="margin-top:12px">💡 Send Login-fil til medarbejderen til brug ved første login.</div>';
+      '<td><div style="display:flex;gap:6px;flex-wrap:wrap">'+
+        '<button class="btn btn-success btn-sm" onclick="exportLicense(\''+e.username+'\')">📲 Login-fil</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="removeEmp(\''+e.username+'\')">Fjern</button>'+
+      '</div></td></tr>';}).join('')+
+    '</tbody></table></div>'+
+    '<div class="alert alert-info" style="margin-top:12px">💡 Send Login-fil til medarbejderen til brug ved første login.</div>';
   document.getElementById('empList').innerHTML=html;
 }
 function exportLicense(username){
@@ -607,18 +612,20 @@ function exportLicense(username){
 function openAddEmp(){document.getElementById('addEmpModal').style.display='flex';}
 function closeAddEmp(){document.getElementById('addEmpModal').style.display='none';}
 function saveNewEmp(){
+  var empNo=document.getElementById('newEmpNo').value.trim();
   var name=document.getElementById('newName').value.trim();
   var user=document.getElementById('newUser').value.trim();
   var pass=document.getElementById('newPass').value;
   var type=document.getElementById('newType').value;
-  if(!name||!user||!pass){showToast('⚠️ Udfyld alle felter');return;}
+  if(!name||!user||!pass){showToast('⚠️ Udfyld navn, brugernavn og kode');return;}
   var s=gs();if(!s.employees)s.employees=[];
-  for(var i=0;i<s.employees.length;i++){if(s.employees[i].username===user){showToast('⚠️ Brugernavn optaget');return;}}
-  s.employees.push({username:user,name:name,type:type,role:type==='deltid'?'Deltid':'Fuldtid'});
+  for(var i=0;i<s.employees.length;i++){if(s.employees[i].username===user){showToast('⚠️ Brugernavn allerede i brug');return;}}
+  s.employees.push({empNo:empNo,username:user,name:name,type:type,role:type==='deltid'?'Deltid':'Fuldtid'});
   var es=gse();if(!es.users)es.users=[];
-  es.users.push({username:user,password:pass,name:name,role:type==='deltid'?'Deltid':'Fuldtid',type:type});
+  es.users.push({username:user,password:pass,name:name,role:type==='deltid'?'Deltid':'Fuldtid',type:type,empNo:empNo});
   sse(es);ss(s);
   closeAddEmp();renderEmployees();populateEmpSelectors();showToast('✅ '+name+' oprettet!');
+  document.getElementById('newEmpNo').value='';
   document.getElementById('newName').value='';document.getElementById('newUser').value='';document.getElementById('newPass').value='';
 }
 function removeEmp(username){

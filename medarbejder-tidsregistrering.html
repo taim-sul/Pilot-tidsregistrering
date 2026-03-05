@@ -234,12 +234,7 @@ function lss(d){try{localStorage.setItem('tidsreg_employee',JSON.stringify(d));}
 
 function getLocalUsers(){
   var s=ls();
-  if(!s.users||s.users.length===0){
-    s.users=[
-      {username:'medarbejder1',password:'kode123',name:'Lars Hansen',role:'Fuldtid',type:'fuldtid'},
-      {username:'medarbejder2',password:'kode123',name:'Maria Jensen',role:'Deltid',type:'deltid'}
-    ];lss(s);
-  }
+  if(!s.users){s.users=[];lss(s);}
   return s.users;
 }
 
