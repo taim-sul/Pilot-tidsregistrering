@@ -311,6 +311,8 @@ function showLoginError(msg){
 
 function startSession(user){
   currentUser=user;
+  // Gem session så siden kan genindlæses uden logout
+  var s=ls();s.session={username:user.username};lss(s);
   document.getElementById('loginError').style.display='none';
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
@@ -319,10 +321,25 @@ function startSession(user){
   initApp();
 }
 
+// Gendan session ved reload
+window.addEventListener('load', function(){
+  var s=ls();
+  if(s.session&&s.session.username){
+    var users=getLocalUsers();
+    for(var i=0;i<users.length;i++){
+      if(users[i].username===s.session.username){
+        startSession(users[i]);return;
+      }
+    }
+  }
+});
+
 function doLogout(){
   if(unsubscribeEntries)unsubscribeEntries();
   if(clockTick)clearInterval(clockTick);
   currentUser=null;
+  // Ryd session
+  var s=ls();s.session=null;lss(s);
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginUser').value='';

@@ -268,6 +268,7 @@ function doLogin(){
     var el=document.getElementById('loginError');el.style.display='';el.textContent='Forkert brugernavn eller adgangskode.';return;
   }
   adminUser=admin;
+  var s=gs();s.session={loggedIn:true};ss(s);
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('companyName').textContent=admin.companyName||'Admin';
@@ -276,9 +277,23 @@ function doLogin(){
 function doLogout(){
   if(liveTimer)clearInterval(liveTimer);
   adminUser=null;
+  var s=gs();s.session=null;ss(s);
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
 }
+
+// Gendan session ved reload
+window.addEventListener('load', function(){
+  var s=gs();
+  if(s.session&&s.session.loggedIn){
+    var admin=getAdmin();
+    adminUser=admin;
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('companyName').textContent=admin.companyName||'Admin';
+    initApp();
+  }
+});
 document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
 function initApp(){
