@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tidsregistrering – Medarbejder</title>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh}
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 0%,#1a2040 0%,#0f1117 60%)}
+.login-card{background:#1a1d27;border:1px solid #2e3148;border-radius:20px;padding:36px 28px;width:100%;max-width:380px;text-align:center}
+.login-logo{width:56px;height:56px;background:linear-gradient(135deg,#4f8ef7,#7c5cfc);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
+.login-card h1{font-size:22px;font-weight:700;margin-bottom:6px}
+.login-card p{color:#8b90a7;font-size:14px;margin-bottom:24px}
+.form-group{margin-bottom:14px;text-align:left}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#8b90a7;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.form-group input,.form-group select{width:100%;padding:13px 14px;background:#222536;border:1px solid #2e3148;border-radius:12px;color:#e8eaf0;font-family:inherit;font-size:16px;outline:none;-webkit-appearance:none}
+.form-group input:focus{border-color:#4f8ef7}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:12px;font-family:inherit;font-size:15px;font-weight:600;border:none;cursor:pointer;width:100%;-webkit-appearance:none}
+.btn:active{opacity:.8}
+.btn-primary{background:linear-gradient(135deg,#4f8ef7,#7c5cfc);color:#fff}
+.btn-green{background:#1a3d2e;color:#34d399;border:1px solid #2a5c44}
+.btn-red{background:#3d1a1a;color:#f87171;border:1px solid #5c2a2a}
+.btn-outline{background:transparent;color:#8b90a7;border:1px solid #2e3148;width:auto;padding:10px 16px}
+.btn-sm{padding:9px 14px;font-size:13px;width:auto}
+.btn-disabled{background:#222536;color:#5a5f78;border:1px solid #2e3148;cursor:default}
+.error-msg{color:#f87171;font-size:13px;margin-top:10px}
+#app{display:none;padding-bottom:72px}
+.topbar{position:sticky;top:0;z-index:100;background:#0f1117;border-bottom:1px solid #2e3148;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f8ef7,#7c5cfc);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+.topbar-name{font-weight:600;font-size:15px}
+.topbar-sub{font-size:11px;color:#5a5f78;display:flex;align-items:center;gap:4px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:pulse 2s infinite;display:inline-block}
+.sync-dot.offline{background:#f87171}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;overflow-x:auto;border-bottom:1px solid #2e3148;scrollbar-width:none;background:#0f1117}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:12px 16px;font-size:13px;font-weight:600;color:#5a5f78;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tab.active{color:#4f8ef7;border-bottom-color:#4f8ef7}
+.tab-content{display:none;padding:16px}
+.tab-content.active{display:block}
+.clock-card{background:#1a1d27;border:1px solid #2e3148;border-radius:18px;padding:24px 20px;text-align:center;margin-bottom:14px}
+.clock-time{font-size:46px;font-weight:300;letter-spacing:-2px;font-variant-numeric:tabular-nums}
+.clock-date{font-size:13px;color:#8b90a7;margin-top:4px;margin-bottom:18px}
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:18px}
+.status-in{background:#1a3d2e;color:#34d399;border:1px solid #2a5c44}
+.status-out{background:#222536;color:#5a5f78;border:1px solid #2e3148}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-green{background:#34d399;animation:pulse 2s infinite}
+.dot-grey{background:#5a5f78}
+.clock-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.elapsed{font-size:13px;color:#8b90a7;margin-top:12px;font-variant-numeric:tabular-nums}
+.card{background:#1a1d27;border:1px solid #2e3148;border-radius:12px;padding:16px;margin-bottom:12px}
+.card-title{font-size:12px;font-weight:700;color:#5a5f78;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.daytype-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.daytype-btn{padding:12px 8px;border-radius:10px;text-align:center;border:2px solid #2e3148;cursor:pointer;font-size:12px;font-weight:600;color:#8b90a7;background:#222536}
+.daytype-btn.selected{border-color:#4f8ef7;background:#1a2640;color:#4f8ef7}
+.daytype-icon{font-size:20px;display:block;margin-bottom:4px}
+.alert{padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.alert-warn{background:#332b14;border:1px solid #5c4a20;color:#fbbf24}
+.alert-info{background:#1a2640;border:1px solid #2a3c60;color:#4f8ef7}
+.period-bar{margin-bottom:12px}
+.period-bar select{width:100%;padding:11px 12px;background:#222536;border:1px solid #2e3148;border-radius:12px;color:#e8eaf0;font-family:inherit;font-size:14px;outline:none;-webkit-appearance:none}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.stat-box{background:#222536;border:1px solid #2e3148;border-radius:10px;padding:12px}
+.stat-val{font-size:22px;font-weight:700;color:#4f8ef7}
+.stat-lbl{font-size:11px;color:#5a5f78;margin-top:2px}
+.day-entry{background:#1a1d27;border:1px solid #2e3148;border-radius:12px;padding:13px 14px;margin-bottom:8px}
+.day-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+.day-date{font-weight:700;font-size:14px}
+.day-hours{font-size:15px;font-weight:700;color:#4f8ef7}
+.type-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase}
+.tag-normal{background:#1a2640;color:#4f8ef7}
+.tag-ferie{background:#1a3040;color:#60b8ff}
+.tag-feriefri{background:#2a1a40;color:#b060ff}
+.tag-friuden{background:#3a1a1a;color:#f87171}
+.tag-fravoer{background:#332b14;color:#fbbf24}
+.pending-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:#332b14;color:#fbbf24;border:1px solid #5c4a20}
+.approved-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:#1a3d2e;color:#34d399;border:1px solid #2a5c44}
+.day-times{font-size:12px;color:#8b90a7;margin-top:3px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+.modal{background:#1a1d27;border:1px solid #2e3148;border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-height:80vh;overflow-y:auto}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:14px}
+.modal-btns{display:flex;gap:10px;margin-top:16px}
+.modal-btns .btn{flex:1}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a3d2e;color:#34d399;border:1px solid #2a5c44;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;z-index:999;white-space:nowrap;pointer-events:none;max-width:90vw;text-align:center}
+input[type=date],input[type=time]{color-scheme:dark}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">⏱</div>
+    <h1>Tidsregistrering</h1>
+    <p>Log ind med dine arbejdsoplysninger</p>
+    <div class="form-group"><label>Brugernavn</label><input type="text" id="loginUser" placeholder="Dit brugernavn" autocapitalize="none" autocorrect="off"></div>
+    <div class="form-group"><label>Adgangskode</label><input type="password" id="loginPass" placeholder="Din adgangskode"></div>
+    <button class="btn btn-primary" onclick="doLogin()">Log ind</button>
+    <div id="loginError" class="error-msg" style="display:none"></div>
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid #2e3148">
+      <div style="font-size:13px;color:#5a5f78;margin-bottom:10px;text-align:left">Første gang? Importer din login-fil:</div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1px solid #2e3148;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:#8b90a7;background:#222536;width:100%">
+        📲 Importer login-fil
+        <input type="file" accept=".json" id="licenseFile" style="display:none" onchange="importLicense(this)">
+      </label>
+      <div id="licenseMsg" style="display:none;margin-top:10px;font-size:13px;padding:10px 12px;border-radius:10px"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="avatar" id="topAvatar">?</div>
+      <div>
+        <div class="topbar-name" id="topName"></div>
+        <div class="topbar-sub"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Forbinder...</span></div>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()">Log ud</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('tab-clock',this)">🕐 Check ind/ud</button>
+    <button class="tab" onclick="switchTab('tab-manual',this)">✏️ Manuel</button>
+    <button class="tab" onclick="switchTab('tab-history',this)">📋 Oversigt</button>
+  </div>
+
+  <div id="tab-clock" class="tab-content active">
+    <div id="missedAlert" style="display:none">
+      <div class="alert alert-warn">⚠️ <span>Du glemte at tjekke ud <strong id="missedDateTxt"></strong>.<br>
+        <a href="#" onclick="openMissedModal();return false;" style="color:inherit;font-weight:700">Tryk her for at rette det.</a></span>
+      </div>
+    </div>
+    <div class="clock-card">
+      <div class="clock-time" id="liveClock">--:--:--</div>
+      <div class="clock-date" id="liveDate"></div>
+      <div id="statusBadge" class="status-badge status-out"><div class="dot dot-grey"></div><span>Ikke tjekket ind</span></div>
+      <div class="clock-btns">
+        <button id="btnIn" class="btn btn-green" onclick="checkIn()">✅ Tjek ind</button>
+        <button id="btnOut" class="btn btn-disabled" onclick="checkOut()">🚪 Tjek ud</button>
+      </div>
+      <div id="elapsedDiv" class="elapsed" style="display:none"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Dagtype</div>
+      <div class="daytype-grid">
+        <div class="daytype-btn selected" onclick="setDayType('normal',this)"><span class="daytype-icon">💼</span>Normal arbejde</div>
+        <div class="daytype-btn" onclick="setDayType('ferie',this)"><span class="daytype-icon">🌴</span>Ferie</div>
+        <div class="daytype-btn" onclick="setDayType('feriefri',this)"><span class="daytype-icon">📅</span>Feriefri</div>
+        <div class="daytype-btn" onclick="setDayType('friuden',this)"><span class="daytype-icon">🚫</span>Fri u. løn</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-manual" class="tab-content">
+    <div class="card">
+      <div class="card-title">Manuel tidsregistrering</div>
+      <div class="form-group"><label>Dato</label><input type="date" id="manDate"></div>
+      <div class="row2" style="margin-top:10px">
+        <div class="form-group"><label>Start</label><input type="time" id="manStart"></div>
+        <div class="form-group"><label>Slut</label><input type="time" id="manEnd"></div>
+      </div>
+      <div class="form-group" style="margin-top:10px"><label>Pause (min)</label><input type="number" id="manBreak" placeholder="0" min="0" inputmode="numeric"></div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Type</label>
+        <select id="manType">
+          <option value="normal">Normalt arbejde</option>
+          <option value="feriefri">Feriefri</option>
+          <option value="fravoer">Fravær</option>
+          <option value="friuden">Fri uden løn</option>
+          <option value="ferie">Ferie</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:10px"><label>Note (valgfri)</label><input type="text" id="manNote" placeholder="Kommentar..."></div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="saveManual()">💾 Gem registrering</button>
+    </div>
+  </div>
+
+  <div id="tab-history" class="tab-content">
+    <div class="period-bar"><select id="histPeriod" onchange="renderHistory()"></select></div>
+    <div class="stats-grid" id="histStats"></div>
+    <div id="histList"><div style="text-align:center;padding:30px;color:#5a5f78">Indlæser...</div></div>
+  </div>
+</div>
+
+<div id="missedModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>⚠️ Manglende udtjekning</h3>
+    <p style="color:#8b90a7;font-size:14px;margin-bottom:14px">Angiv hvornår du sluttede arbejde den <strong id="missedModalDate"></strong>.</p>
+    <div class="form-group"><label>Sluttidspunkt</label><input type="time" id="missedTime"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeMissedModal()">Annuller</button>
+      <button class="btn btn-primary" onclick="saveMissed()">Gem</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Firebase init ─────────────────────────────────────────
+var firebaseConfig = {
+  apiKey: "AIzaSyDJTXCyO-K8xOr9KzANf1HA7Zd4a-9nWMA",
+  authDomain: "pakkepiloten-tid.firebaseapp.com",
+  projectId: "pakkepiloten-tid",
+  storageBucket: "pakkepiloten-tid.firebasestorage.app",
+  messagingSenderId: "712353459381",
+  appId: "1:712353459381:web:4db1da1fa8f3af57df22fc"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+// ── State ─────────────────────────────────────────────────
+var currentUser = null;
+var selectedType = 'normal';
+var clockTick = null;
+var entriesCache = [];
+var unsubscribeEntries = null;
+
+// ── Local storage (brugere + check-in state) ──────────────
+function ls(){try{return JSON.parse(localStorage.getItem('tidsreg_employee')||'{}');}catch(e){return{};}}
+function lss(d){try{localStorage.setItem('tidsreg_employee',JSON.stringify(d));}catch(e){}}
+
+function getLocalUsers(){
+  var s=ls();
+  if(!s.users||s.users.length===0){
+    s.users=[
+      {username:'medarbejder1',password:'kode123',name:'Lars Hansen',role:'Fuldtid',type:'fuldtid'},
+      {username:'medarbejder2',password:'kode123',name:'Maria Jensen',role:'Deltid',type:'deltid'}
+    ];lss(s);
+  }
+  return s.users;
+}
+
+// ── License import ────────────────────────────────────────
+function importLicense(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var data=JSON.parse(ev.target.result);
+      if(!data.username||!data.password||!data.name){throw new Error('Ugyldig fil');}
+      var s=ls();if(!s.users)s.users=[];
+      var found=false;
+      for(var i=0;i<s.users.length;i++){
+        if(s.users[i].username===data.username){
+          s.users[i].password=data.password;s.users[i].name=data.name;
+          s.users[i].role=data.role||'';s.users[i].type=data.type||'fuldtid';
+          found=true;break;
+        }
+      }
+      if(!found)s.users.push({username:data.username,password:data.password,name:data.name,role:data.role||'',type:data.type||'fuldtid'});
+      lss(s);
+      document.getElementById('loginUser').value=data.username;
+      document.getElementById('loginPass').value=data.password;
+      var msg=document.getElementById('licenseMsg');
+      msg.style.display='';msg.style.background='#1a3d2e';msg.style.border='1px solid #2a5c44';msg.style.color='#34d399';
+      msg.textContent='✅ Konto importeret for '+data.name+'! Tryk "Log ind".';
+    }catch(err){
+      var msg=document.getElementById('licenseMsg');
+      msg.style.display='';msg.style.background='#3a1a1a';msg.style.border='1px solid #5c2a2a';msg.style.color='#f87171';
+      msg.textContent='❌ Fejl: '+err.message;
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── Login ─────────────────────────────────────────────────
+function doLogin(){
+  var u=document.getElementById('loginUser').value.trim();
+  var p=document.getElementById('loginPass').value;
+  var users=getLocalUsers();
+  var user=null;
+  for(var i=0;i<users.length;i++){if(users[i].username===u&&users[i].password===p){user=users[i];break;}}
+  if(!user){
+    var el=document.getElementById('loginError');el.style.display='';el.textContent='Forkert brugernavn eller adgangskode.';return;
+  }
+  currentUser=user;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('topName').textContent=user.name;
+  document.getElementById('topAvatar').textContent=user.name[0];
+  initApp();
+}
+
+function doLogout(){
+  if(unsubscribeEntries)unsubscribeEntries();
+  if(clockTick)clearInterval(clockTick);
+  currentUser=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+
+// ── Init ──────────────────────────────────────────────────
+function initApp(){
+  startClock();
+  document.getElementById('manDate').value=todayStr();
+  subscribeEntries();
+  restoreCheckIn();
+  checkMissed();
+}
+
+function setSyncStatus(online){
+  var dot=document.getElementById('syncDot');
+  var txt=document.getElementById('syncTxt');
+  if(online){dot.className='sync-dot';txt.textContent='Live sync aktiv';}
+  else{dot.className='sync-dot offline';txt.textContent='Offline';}
+}
+
+// ── Firebase entries ──────────────────────────────────────
+function subscribeEntries(){
+  if(unsubscribeEntries)unsubscribeEntries();
+  unsubscribeEntries = db.collection('entries').where('username','==',currentUser.username)
+    .onSnapshot(function(snap){
+      entriesCache=[];
+      snap.forEach(function(d){entriesCache.push(d.data());});
+      setSyncStatus(true);
+      populatePeriods();
+      renderHistory();
+    },function(err){setSyncStatus(false);console.error(err);});
+}
+
+function saveEntry(entry){
+  db.collection('entries').doc(String(entry.id)).set(entry)
+    .catch(function(e){showToast('⚠️ Kunne ikke gemme online');});
+}
+
+function saveCheckInState(state){
+  var s=ls();s.checkInState=state;lss(s);
+  db.collection('checkin').doc(currentUser.username).set(state)
+    .catch(function(e){console.error('checkin save error',e);});
+}
+
+function loadCheckInState(){
+  var s=ls();return s.checkInState||null;
+}
+
+// ── Clock ─────────────────────────────────────────────────
+function startClock(){updateClock();clockTick=setInterval(updateClock,1000);}
+function updateClock(){
+  var now=new Date();
+  document.getElementById('liveClock').textContent=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  var days=['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  var months=['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
+  document.getElementById('liveDate').textContent=days[now.getDay()]+' d. '+now.getDate()+'. '+months[now.getMonth()]+' '+now.getFullYear();
+  var cs=loadCheckInState();
+  if(cs&&currentUser&&cs.username===currentUser.username&&cs.checkedIn){
+    var diff=now.getTime()-cs.startTime;
+    var h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),sc=Math.floor((diff%60000)/1000);
+    document.getElementById('elapsedDiv').textContent='Arbejdstid: '+pad(h)+':'+pad(m)+':'+pad(sc);
+  }
+}
+
+// ── Check In/Out ──────────────────────────────────────────
+function checkIn(){
+  var state={username:currentUser.username,name:currentUser.name,checkedIn:true,startTime:Date.now(),start:pad(new Date().getHours())+':'+pad(new Date().getMinutes()),date:todayStr(),dayType:selectedType};
+  saveCheckInState(state);
+  setCheckInUI(true);
+  showToast('✅ Tjekket ind!');
+}
+
+function checkOut(){
+  var cs=loadCheckInState();
+  if(!cs||!cs.checkedIn)return;
+  var endTime=Date.now();
+  var hours=Math.round(((endTime-cs.startTime)/3600000)*100)/100;
+  var entry={
+    id:endTime,username:currentUser.username,name:currentUser.name,
+    date:cs.date,start:msToTime(cs.startTime),end:msToTime(endTime),
+    hours:hours,type:cs.dayType||selectedType||'normal',
+    method:'auto',note:'',approved:false
+  };
+  saveEntry(entry);
+  saveCheckInState({username:currentUser.username,checkedIn:false});
+  setCheckInUI(false);
+  showToast('🚪 Udtjekket – '+hours.toFixed(2)+' timer gemt');
+}
+
+function restoreCheckIn(){
+  var cs=loadCheckInState();
+  setCheckInUI(cs&&cs.username===currentUser.username&&cs.checkedIn);
+}
+
+function setCheckInUI(isIn){
+  var badge=document.getElementById('statusBadge');
+  var btnIn=document.getElementById('btnIn');
+  var btnOut=document.getElementById('btnOut');
+  var elapsed=document.getElementById('elapsedDiv');
+  if(isIn){
+    badge.className='status-badge status-in';badge.innerHTML='<div class="dot dot-green"></div><span>Tjekket ind</span>';
+    btnIn.className='btn btn-disabled';btnIn.disabled=true;
+    btnOut.className='btn btn-red';btnOut.disabled=false;
+    elapsed.style.display='';
+  }else{
+    badge.className='status-badge status-out';badge.innerHTML='<div class="dot dot-grey"></div><span>Ikke tjekket ind</span>';
+    btnIn.className='btn btn-green';btnIn.disabled=false;
+    btnOut.className='btn btn-disabled';btnOut.disabled=true;
+    elapsed.style.display='none';
+  }
+}
+
+function checkMissed(){
+  var cs=loadCheckInState();
+  if(cs&&cs.username===currentUser.username&&cs.checkedIn){
+    if(new Date(cs.startTime).toDateString()!==new Date().toDateString()){
+      var d=new Date(cs.startTime);
+      var days=['søn','man','tir','ons','tor','fre','lør'];
+      var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+      var label=days[d.getDay()]+' d. '+d.getDate()+'. '+mo[d.getMonth()];
+      document.getElementById('missedDateTxt').textContent=label;
+      document.getElementById('missedModalDate').textContent=label;
+      document.getElementById('missedAlert').style.display='';
+    }
+  }
+}
+
+function openMissedModal(){document.getElementById('missedModal').style.display='flex';}
+function closeMissedModal(){document.getElementById('missedModal').style.display='none';}
+
+function saveMissed(){
+  var t=document.getElementById('missedTime').value;
+  if(!t){showToast('⚠️ Angiv et tidspunkt');return;}
+  var cs=loadCheckInState();
+  var endDate=new Date(cs.startTime);
+  var parts=t.split(':');endDate.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
+  var hours=Math.max(0,Math.round(((endDate.getTime()-cs.startTime)/3600000)*100)/100);
+  var entry={
+    id:Date.now(),username:currentUser.username,name:currentUser.name,
+    date:cs.date,start:msToTime(cs.startTime),end:t,hours:hours,
+    type:cs.dayType||'normal',method:'missed-fix',note:'Rettet: glemt udtjekning',approved:false
+  };
+  saveEntry(entry);
+  saveCheckInState({username:currentUser.username,checkedIn:false});
+  setCheckInUI(false);
+  document.getElementById('missedAlert').style.display='none';
+  closeMissedModal();
+  showToast('✅ Rettet!');
+}
+
+// ── Day Type ──────────────────────────────────────────────
+function setDayType(type,el){
+  selectedType=type;
+  var btns=document.querySelectorAll('.daytype-btn');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('selected');
+  el.classList.add('selected');
+}
+
+// ── Manual ────────────────────────────────────────────────
+function saveManual(){
+  var date=document.getElementById('manDate').value;
+  var start=document.getElementById('manStart').value;
+  var end=document.getElementById('manEnd').value;
+  var brk=parseInt(document.getElementById('manBreak').value)||0;
+  var type=document.getElementById('manType').value;
+  var note=document.getElementById('manNote').value;
+  if(!date||!start||!end){showToast('⚠️ Udfyld dato, start og sluttid');return;}
+  var hours=Math.max(0,Math.round((timeToH(end)-timeToH(start)-brk/60)*100)/100);
+  var entry={
+    id:Date.now(),username:currentUser.username,name:currentUser.name,
+    date:date,start:start,end:end,hours:hours,breakMin:brk,
+    type:type,method:'manual',note:note,approved:false
+  };
+  saveEntry(entry);
+  document.getElementById('manStart').value='';document.getElementById('manEnd').value='';
+  document.getElementById('manBreak').value='';document.getElementById('manNote').value='';
+  showToast('💾 Gemt!');
+}
+
+// ── Periods ───────────────────────────────────────────────
+function dateToPeriod(ds){
+  var d=new Date(ds);var day=d.getDate(),mo=d.getMonth(),yr=d.getFullYear();
+  if(day>=20)return yr+'-'+pad(mo+1);
+  if(mo===0)return(yr-1)+'-12';
+  return yr+'-'+pad(mo);
+}
+function periodDates(p){
+  var parts=p.split('-');var y=parseInt(parts[0]),m=parseInt(parts[1]);
+  return{start:new Date(y,m-1,20),end:m===12?new Date(y+1,0,19):new Date(y,m,19)};
+}
+function periodLabel(p){
+  var pd=periodDates(p);
+  var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  return pd.start.getDate()+'. '+mo[pd.start.getMonth()]+' – '+pd.end.getDate()+'. '+mo[pd.end.getMonth()]+' '+pd.end.getFullYear();
+}
+function populatePeriods(){
+  var set={};set[dateToPeriod(todayStr())]=true;
+  for(var i=0;i<entriesCache.length;i++)set[dateToPeriod(entriesCache[i].date)]=true;
+  var periods=Object.keys(set).sort().reverse();
+  var hp=document.getElementById('histPeriod');
+  var curr=hp?hp.value:'';
+  hp.innerHTML=periods.map(function(p){return'<option value="'+p+'"'+(p===curr?' selected':'')+'>'+periodLabel(p)+'</option>';}).join('');
+}
+
+// ── History ───────────────────────────────────────────────
+function renderHistory(){
+  if(!currentUser)return;
+  var hp=document.getElementById('histPeriod');
+  var period=hp?hp.value:'';
+  if(!period){document.getElementById('histList').innerHTML='<div class="alert alert-info">ℹ️ Ingen perioder endnu.</div>';return;}
+  var pd=periodDates(period);
+  var entries=entriesCache.filter(function(e){var d=new Date(e.date);return d>=pd.start&&d<=pd.end;}).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+  var normalH=0,ferieH=0,feriefriH=0,friH=0;
+  for(var i=0;i<entries.length;i++){
+    if(entries[i].type==='normal')normalH+=entries[i].hours;
+    else if(entries[i].type==='ferie')ferieH+=entries[i].hours;
+    else if(entries[i].type==='feriefri')feriefriH+=entries[i].hours;
+    else if(entries[i].type==='friuden')friH+=entries[i].hours;
+  }
+  document.getElementById('histStats').innerHTML=
+    '<div class="stat-box"><div class="stat-val">'+normalH.toFixed(1)+'t</div><div class="stat-lbl">Arbejdstimer</div></div>'+
+    '<div class="stat-box"><div class="stat-val">'+ferieH.toFixed(1)+'t</div><div class="stat-lbl">Ferietimer</div></div>'+
+    '<div class="stat-box"><div class="stat-val">'+feriefriH.toFixed(1)+'t</div><div class="stat-lbl">Feriefri</div></div>'+
+    '<div class="stat-box"><div class="stat-val">'+friH.toFixed(1)+'t</div><div class="stat-lbl">Fri u. løn</div></div>';
+  if(!entries.length){document.getElementById('histList').innerHTML='<div class="alert alert-info">ℹ️ Ingen registreringer i denne periode.</div>';return;}
+  var typeMap={normal:'tag-normal',ferie:'tag-ferie',feriefri:'tag-feriefri',friuden:'tag-friuden',fravoer:'tag-fravoer'};
+  var typeLabel={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
+  var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
+  var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  var html='';
+  for(var i=0;i<entries.length;i++){
+    var e=entries[i];var d=new Date(e.date);
+    var dl=days[d.getDay()]+' '+d.getDate()+'. '+mo[d.getMonth()];
+    var cls=typeMap[e.type]||'tag-normal';var lbl=typeLabel[e.type]||e.type;
+    var statusTag=e.approved?'<span class="approved-tag">✓ Godkendt</span>':'<span class="pending-tag">⏳ Afventer</span>';
+    var times=(e.start&&e.end)?(e.start+' – '+e.end):'';
+    if(e.breakMin)times+=' · Pause: '+e.breakMin+' min';
+    if(e.note)times+=' · '+e.note;
+    if(e.method==='manual')times+=' · Manuel';
+    html+='<div class="day-entry"><div class="day-header"><div><div class="day-date">'+dl+'</div><span class="type-tag '+cls+'">'+lbl+'</span></div><div style="text-align:right"><div class="day-hours">'+e.hours.toFixed(2)+'t</div>'+statusTag+'</div></div>'+(times?'<div class="day-times">'+times+'</div>':'')+'</div>';
+  }
+  document.getElementById('histList').innerHTML=html;
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+function switchTab(id,el){
+  var contents=document.querySelectorAll('.tab-content');for(var i=0;i<contents.length;i++)contents[i].classList.remove('active');
+  var tabs=document.querySelectorAll('.tab');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');el.classList.add('active');
+  if(id==='tab-history')renderHistory();
+}
+
+// ── Utils ─────────────────────────────────────────────────
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function pad(n){return n<10?'0'+n:''+n;}
+function msToTime(ms){var d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes());}
+function timeToH(t){var p=t.split(':');return parseInt(p[0])+parseInt(p[1])/60;}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2500);}
+</script>
+</body>
+</html>
