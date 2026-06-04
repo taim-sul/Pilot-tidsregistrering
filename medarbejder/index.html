@@ -636,7 +636,7 @@ function subscribeEntries(){
       setSyncStatus(false);
     });
   // Sync pending entries naar forbindelsen er oppe
-  db.enableNetwork().then(function(){syncPending();}).catch(function(){});
+  syncPending();
 }
 
 function saveCheckInState(state){
