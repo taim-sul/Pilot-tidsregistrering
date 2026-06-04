@@ -245,12 +245,12 @@ input[type=date],input[type=time]{color-scheme:dark}
           <option value="fravoer">Fravær</option>
           <option value="friuden">Fri uden løn</option>
           <option value="ferie">Ferie</option>
+          <option value="afspadsering">Afspadsering 🔄</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:10px"><label>Note (valgfri)</label><input type="text" id="manNote" placeholder="Kommentar..."></div>
       <button class="btn btn-primary" style="margin-top:14px" onclick="saveManual()">💾 Gem registrering</button>
     </div>
-  </div>
   </div>
 
   <div id="tab-history" class="tab-content">
@@ -273,6 +273,7 @@ input[type=date],input[type=time]{color-scheme:dark}
 </div>
 
 <div id="toast"></div>
+<footer style="text-align:center;padding:18px 16px 24px;font-size:11px;color:#5a5f78;border-top:1px solid #2e3148;margin-top:32px">Copyright &copy; <a href="mailto:info@smartapps.dk" style="color:#5a5f78;text-decoration:none">smartapps</a> &nbsp;|&nbsp; <a href="mailto:info@smartapps.dk" style="color:#5a5f78;text-decoration:none">info@smartapps.dk</a></footer>
 
 <script>
 var firebaseConfig = {
@@ -359,6 +360,7 @@ function getPending(){var s=ls();return s.pendingQueue||[];}
 function savePending(item){var s=ls();if(!s.pendingQueue)s.pendingQueue=[];s.pendingQueue.push(item);lss(s);}
 function removePending(id){var s=ls();s.pendingQueue=(s.pendingQueue||[]).filter(function(i){return i.id!==id;});lss(s);}
 function syncPending(){
+  if(!currentUser||!currentCompany)return;
   var q=getPending();if(!q.length)return;
   q.forEach(function(item){
     if(item.type==='entry'){
@@ -390,15 +392,15 @@ var unsubscribeEntries = null;
 var companyPeriodDay = 20; // hentes fra Firestore ved login
 
 function fetchPeriodDay(){
+  // Brug cachet vaerdi straks saa perioderne vises korrekt med det samme
+  var s=ls();if(s['periodDay_'+currentCompany.code])companyPeriodDay=s['periodDay_'+currentCompany.code];
   db.collection('companies').doc(currentCompany.code).collection('config').doc('settings').get().then(function(doc){
     if(doc.exists&&doc.data().periodDay){
       companyPeriodDay=doc.data().periodDay;
-      var s=ls();s['periodDay_'+currentCompany.code]=companyPeriodDay;lss(s);
+      var cs=ls();cs['periodDay_'+currentCompany.code]=companyPeriodDay;lss(cs);
       populatePeriods();renderHistory();
     }
   }).catch(function(){});
-  // Brug cachet vaerdi straks hvis den findes
-  var s=ls();if(s['periodDay_'+currentCompany.code])companyPeriodDay=s['periodDay_'+currentCompany.code];
 }
 
 // Storage
@@ -490,7 +492,7 @@ function doLogin(){
   var u=document.getElementById('loginUser').value.trim();
   var p=document.getElementById('loginPass').value;
   if(!u||!p){showLoginError('Udfyld brugernavn og adgangskode.');return;}
-  if(!currentCompany){showLoginError('Vaelg virksomhed foerst.');return;}
+  if(!currentCompany){showLoginError('Vælg virksomhed først.');return;}
   // Tjek lokalt (localStorage)
   var users=getLocalUsers();
   var localUser=null;
@@ -556,9 +558,10 @@ function startSession(user){
 }
 
 function doLogout(){
-  if(unsubscribeEntries)unsubscribeEntries();
-  if(clockTick)clearInterval(clockTick);
-  currentUser=null;currentCompany=null;
+  _actionLock=false;
+  if(unsubscribeEntries){unsubscribeEntries();unsubscribeEntries=null;}
+  if(clockTick){clearInterval(clockTick);clockTick=null;}
+  currentUser=null;currentCompany=null;entriesCache=[];selectedType='normal';_cachedCheckInState=null;
   var s=ls();s.session=null;lss(s);
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
@@ -568,6 +571,8 @@ function doLogout(){
   document.getElementById('companyCode').value='';
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
+  var dot=document.getElementById('syncDot');var txt=document.getElementById('syncTxt');
+  if(dot)dot.className='sync-dot offline';if(txt)txt.textContent='Forbinder...';
 }
 
 document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
@@ -600,6 +605,7 @@ function initApp(){
 
 function setSyncStatus(online){
   var dot=document.getElementById('syncDot');var txt=document.getElementById('syncTxt');
+  if(!dot||!txt)return;
   var pending=getPending().length;
   if(online){
     dot.className='sync-dot';
@@ -617,36 +623,43 @@ function checkinCol(){return db.collection('companies').doc(currentCompany.code)
 
 function subscribeEntries(){
   if(unsubscribeEntries)unsubscribeEntries();
+  var connTimeout=setTimeout(function(){setSyncStatus(false);},5000);
   unsubscribeEntries=entriesCol().where('username','==',currentUser.username)
     .onSnapshot(function(snap){
+      clearTimeout(connTimeout);
+      if(!currentUser)return;
       entriesCache=[];
       snap.forEach(function(d){entriesCache.push(d.data());});
       setSyncStatus(true);populatePeriods();renderHistory();
-    },function(){setSyncStatus(false);});
+    },function(){
+      clearTimeout(connTimeout);
+      setSyncStatus(false);
+    });
   // Sync pending entries naar forbindelsen er oppe
   db.enableNetwork().then(function(){syncPending();}).catch(function(){});
 }
 
-function saveEntry(entry){
-  entriesCol().doc(String(entry.id)).set(entry).catch(function(){showToast('⚠️ Kunne ikke gemme');});
-}
-
 function saveCheckInState(state){
+  _cachedCheckInState=state;
   var s=ls();s.checkInState=state;lss(s);
   checkinCol().doc(currentUser.username).set(state).catch(function(){});
 }
 
-function loadCheckInState(){var s=ls();return s.checkInState||null;}
+function loadCheckInState(){
+  if(_cachedCheckInState!==null)return _cachedCheckInState;
+  var s=ls();_cachedCheckInState=s.checkInState||null;return _cachedCheckInState;
+}
 
 // ── Clock ─────────────────────────────────────────────────
 function startClock(){updateClock();clockTick=setInterval(updateClock,1000);}
+var _cachedCheckInState=null;
 function updateClock(){
   var now=new Date();
   document.getElementById('liveClock').textContent=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
   var days=['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
   var months=['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
   document.getElementById('liveDate').textContent=days[now.getDay()]+' d. '+now.getDate()+'. '+months[now.getMonth()]+' '+now.getFullYear();
-  var cs=loadCheckInState();
+  var cs=_cachedCheckInState;
   if(cs&&currentUser&&cs.username===currentUser.username&&cs.checkedIn){
     var diff=now.getTime()-cs.startTime;
     var h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),sc=Math.floor((diff%60000)/1000);
@@ -660,7 +673,6 @@ function _withLock(fn) {
   if (_actionLock) return;
   _actionLock = true;
   fn();
-  setTimeout(function(){ _actionLock = false; }, 2000);
 }
 function _setBtnLoading(id, loading, label) {
   var btn = document.getElementById(id);
@@ -770,7 +782,7 @@ function saveMissed(){
   var missedStartMs=cs.startTime;
   if(corrMissedStart!==rawMissedStart){var p2=corrMissedStart.split(':');var d3=new Date(cs.startTime);d3.setHours(parseInt(p2[0]),parseInt(p2[1]),0,0);missedStartMs=d3.getTime();}
   var hours=Math.max(0,Math.round(((endDate.getTime()-missedStartMs)/3600000)*100)/100);
-  var entry={id:uid(),username:currentUser.username,name:currentUser.name,date:cs.date,start:corrMissedStart,end:t,hours:hours,type:cs.dayType||'normal',method:'missed-fix',note:'Rettet: glemt udtjekning',approved:false};
+  var entry={id:uid(),username:currentUser.username,name:currentUser.name,date:cs.date,start:corrMissedStart,end:t,hours:hours,type:cs.dayType||'normal',method:'missed-fix',note:'',approved:false};
   var newState={username:currentUser.username,checkedIn:false};
   var btn=document.querySelector('#missedModal .btn-primary');
   if(btn){btn.disabled=true;btn.textContent='⏳';}
@@ -780,7 +792,11 @@ function saveMissed(){
     var s=ls();s.checkInState=newState;lss(s);
     setCheckInUI(false);document.getElementById('missedAlert').style.display='none';closeMissedModal();showToast('✅ Rettet!');
   }).catch(function(){
-    showToast('⚠️ Fejl – prøv igen');
+    savePending({id:uid(),type:'entry',entry:entry,savedAt:Date.now()});
+    savePending({id:uid(),type:'checkin',state:newState,savedAt:Date.now()});
+    var s=ls();s.checkInState=newState;lss(s);
+    setCheckInUI(false);document.getElementById('missedAlert').style.display='none';closeMissedModal();
+    showToast('📴 Offline – gemt lokalt, synkroniseres automatisk');
   }).finally(function(){
     if(btn){btn.disabled=false;btn.textContent='Gem';}
   });
@@ -814,7 +830,7 @@ function setDayType(type,el){
     }).catch(function(){flexInfo.textContent='Kunne ikke hente saldo';});
   } else if(!isWork){
     flexInfo.style.display='none';
-    var typeLabels={ferie:'Ferie 🌴',feriefri:'Feriefri 📅',friuden:'Fri u. løn 🚫'};
+    var typeLabels={ferie:'Ferie 🌴',feriefri:'Feriefri 📅',friuden:'Fri u. løn 🚫',afspadsering:'Afspadsering 🔄'};
     var h=getDayHours();
     autoBtn.style.display='flex';
     autoBtn.textContent='💾 Registrer '+(typeLabels[type]||type)+' ('+h+' t)';
@@ -869,7 +885,18 @@ function savePeriod(){
     document.getElementById('periodFrom').value='';
     document.getElementById('periodTo').value='';
     document.getElementById('periodPreview').style.display='none';
-  }).catch(function(){showToast('⚠️ Fejl ved gemning');}).finally(function(){
+  }).catch(function(){
+    // Batch kan ikke queues – gem som individuelle pending entries
+    for(var j=0;j<toSave.length;j++){
+      var pe={id:uid(),username:currentUser.username,name:currentUser.name,
+        date:toSave[j],start:'',end:'',hours:getDayHours(toSave[j]),type:type,method:'period',note:'',approved:false};
+      savePending({id:uid(),type:'entry',entry:pe,savedAt:Date.now()});
+    }
+    showToast('📴 Offline – '+toSave.length+' dage gemt lokalt, synkroniseres automatisk');
+    document.getElementById('periodFrom').value='';
+    document.getElementById('periodTo').value='';
+    document.getElementById('periodPreview').style.display='none';
+  }).finally(function(){
     if(btn){btn.disabled=false;btn.textContent='💾 Gem periode';}
   });
 }
@@ -973,12 +1000,12 @@ function renderHistory(){
   if(!period){document.getElementById('histList').innerHTML='<div class="alert alert-info">ℹ️ Ingen perioder endnu.</div>';return;}
   var pd=periodDates(period);
   var entries=entriesCache.filter(function(e){var d=new Date(e.date);return d>=pd.start&&d<=pd.end;}).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
-  var normalH=0,ferieH=0,feriefriH=0,friH=0;
-  for(var i=0;i<entries.length;i++){if(entries[i].type==='normal')normalH+=entries[i].hours;else if(entries[i].type==='ferie')ferieH+=entries[i].hours;else if(entries[i].type==='feriefri')feriefriH+=entries[i].hours;else if(entries[i].type==='friuden')friH+=entries[i].hours;}
-  document.getElementById('histStats').innerHTML='<div class="stat-box"><div class="stat-val">'+normalH.toFixed(1)+'t</div><div class="stat-lbl">Arbejdstimer</div></div><div class="stat-box"><div class="stat-val">'+ferieH.toFixed(1)+'t</div><div class="stat-lbl">Ferietimer</div></div><div class="stat-box"><div class="stat-val">'+feriefriH.toFixed(1)+'t</div><div class="stat-lbl">Feriefri</div></div><div class="stat-box"><div class="stat-val">'+friH.toFixed(1)+'t</div><div class="stat-lbl">Fri u. løn</div></div>';
+  var normalH=0,ferieH=0,feriefriH=0,friH=0,afspadH=0;
+  for(var i=0;i<entries.length;i++){if(entries[i].type==='normal')normalH+=entries[i].hours;else if(entries[i].type==='ferie')ferieH+=entries[i].hours;else if(entries[i].type==='feriefri')feriefriH+=entries[i].hours;else if(entries[i].type==='friuden')friH+=entries[i].hours;else if(entries[i].type==='afspadsering')afspadH+=entries[i].hours;}
+  document.getElementById('histStats').innerHTML='<div class="stat-box"><div class="stat-val">'+normalH.toFixed(1)+'t</div><div class="stat-lbl">Arbejdstimer</div></div><div class="stat-box"><div class="stat-val">'+ferieH.toFixed(1)+'t</div><div class="stat-lbl">Ferietimer</div></div><div class="stat-box"><div class="stat-val">'+feriefriH.toFixed(1)+'t</div><div class="stat-lbl">Feriefri</div></div><div class="stat-box"><div class="stat-val">'+friH.toFixed(1)+'t</div><div class="stat-lbl">Fri u. løn</div></div>'+(afspadH>0?'<div class="stat-box"><div class="stat-val">'+afspadH.toFixed(1)+'t</div><div class="stat-lbl">Afspadsering</div></div>':'');
   if(!entries.length){document.getElementById('histList').innerHTML='<div class="alert alert-info">ℹ️ Ingen registreringer i denne periode.</div>';return;}
-  var typeMap={normal:'tag-normal',ferie:'tag-ferie',feriefri:'tag-feriefri',friuden:'tag-friuden',fravoer:'tag-fravoer'};
-  var typeLabel={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
+  var typeMap={normal:'tag-normal',ferie:'tag-ferie',feriefri:'tag-feriefri',friuden:'tag-friuden',fravoer:'tag-fravoer',afspadsering:'tag-afspadsering'};
+  var typeLabel={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær',afspadsering:'Afspadsering 🔄'};
   var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
   var html='';
   for(var i=0;i<entries.length;i++){
@@ -1005,11 +1032,9 @@ function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()
 function pad(n){return n<10?'0'+n:''+n;}
 function msToTime(ms){var d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes());}
 function timeToH(t){var p=t.split(':');return parseInt(p[0])+parseInt(p[1])/60;}
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2500);}
+var _toastTimer=null;function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';if(_toastTimer)clearTimeout(_toastTimer);_toastTimer=setTimeout(function(){t.style.opacity='0';_toastTimer=null;},2500);}
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js', {scope: '/MinTid/medarbejder/'}).catch(function(e){console.log('SW:',e);});});}
 </script>
-<footer style="text-align:center;padding:18px 16px 24px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:32px">
-  Copyright &copy; <a href="mailto:info@smartapps.dk" style="color:#9ca3af;text-decoration:none">smartapps</a> &nbsp;|&nbsp; <a href="mailto:info@smartapps.dk" style="color:#9ca3af;text-decoration:none">info@smartapps.dk</a>
-</footer>
+
 </body>
 </html>
