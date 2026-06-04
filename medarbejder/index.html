@@ -321,38 +321,37 @@ function haversineDistance(lat1,lon1,lat2,lon2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-function checkGPSAndRun(callback,onBlock){
+function checkGPSAndRun(callback){
   var loc=COMPANY_LOCATIONS[currentCompany?currentCompany.code:''];
   if(!loc){callback();return;}
-  if(!navigator.geolocation){showGPSBlock(null,'','GPS ikke understøttet på denne enhed');if(onBlock)onBlock();return;}
+  if(!navigator.geolocation){showGPSWarn(null,'','GPS ikke understøttet på denne enhed');callback();return;}
   showToast('📍 Tjekker din lokation...');
   navigator.geolocation.getCurrentPosition(
     function(pos){
       var dist=Math.round(haversineDistance(pos.coords.latitude,pos.coords.longitude,loc.lat,loc.lng));
-      if(dist<=GPS_RADIUS){callback();}
-      else{showGPSBlock(dist,loc.name);if(onBlock)onBlock();}
+      if(dist>GPS_RADIUS)showGPSWarn(dist,loc.name);
+      callback();
     },
     function(err){
-      var msg=err.code===1?'Slå lokation til i din browser for at tjekke ind':'Kunne ikke hente lokation – prøv igen';
-      showGPSBlock(null,loc.name,msg);if(onBlock)onBlock();
+      var msg=err.code===1?'GPS er slået fra – registrering gennemført uden lokationstjek':'Kunne ikke hente lokation – registrering gennemført';
+      showGPSWarn(null,loc.name,msg);callback();
     },
     {enableHighAccuracy:true,timeout:10000,maximumAge:30000}
   );
 }
 
-function showGPSBlock(dist,locName,customMsg){
-  var msg=customMsg||(dist?'Du er '+dist+'m fra arbejdspladsen (max '+GPS_RADIUS+'m). Bevæg dig til: '+locName:'Lokation ikke tilgængelig');
-  // Vis som en tydelig besked i stedet for toast
+function showGPSWarn(dist,locName,customMsg){
+  var msg=customMsg||(dist?'Du er '+dist+'m fra arbejdspladsen (forventet max '+GPS_RADIUS+'m)':'Lokation ikke tilgængelig');
   var existing=document.getElementById('gpsBlockMsg');
   if(!existing){
     existing=document.createElement('div');
     existing.id='gpsBlockMsg';
-    existing.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:14px 16px;font-size:13px;color:#991b1b;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+    existing.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#332b14;border:1px solid #5c4a20;border-radius:12px;padding:14px 16px;font-size:13px;color:#fbbf24;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
     document.body.appendChild(existing);
   }
-  existing.innerHTML='📍 <strong>Check-in ikke muligt</strong><br>'+msg;
+  existing.innerHTML='📍 <strong>Advarsel: Udenfor arbejdspladsen</strong><br>'+msg;
   existing.style.display='block';
-  setTimeout(function(){if(existing)existing.style.display='none';},5000);
+  setTimeout(function(){if(existing)existing.style.display='none';},4000);
 }
 
 // ── Pending queue (offline-safe) ──────────────────────────
@@ -700,10 +699,6 @@ function checkIn(){
         _setBtnLoading('btnIn', false);
         _actionLock = false;
       });
-    }, function(){
-      // GPS blokerede - frigiv lås
-      _setBtnLoading('btnIn', false);
-      _actionLock = false;
     });
   });
 }
@@ -735,9 +730,6 @@ function checkOut(){
         _setBtnLoading('btnOut', false);
         _actionLock = false;
       });
-    }, function(){
-      _setBtnLoading('btnOut', false);
-      _actionLock = false;
     });
   });
 }
