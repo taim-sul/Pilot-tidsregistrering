@@ -86,6 +86,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Ar
 .tag-feriefri{background:#2a1a40;color:#b060ff}
 .tag-friuden{background:#3a1a1a;color:#f87171}
 .tag-fravoer{background:#332b14;color:#fbbf24}
+.tag-afspadsering{background:#1a3040;color:#38bdf8}
 .pending-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:#332b14;color:#fbbf24;border:1px solid #5c4a20}
 .approved-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:#1a3d2e;color:#34d399;border:1px solid #2a5c44}
 .rejected-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:#3a1a1a;color:#f87171;border:1px solid #5c2a2a}
@@ -197,6 +198,8 @@ input[type=date],input[type=time]{color-scheme:dark}
         <div class="daytype-btn" onclick="setDayType('ferie',this)"><span class="daytype-icon">🌴</span>Ferie</div>
         <div class="daytype-btn" onclick="setDayType('feriefri',this)"><span class="daytype-icon">📅</span>Feriefri</div>
         <div class="daytype-btn" onclick="setDayType('friuden',this)"><span class="daytype-icon">🚫</span>Fri u. løn</div>
+        <div class="daytype-btn" onclick="setDayType('afspadsering',this)" id="btnAfspadsering"><span class="daytype-icon">🔄</span>Afspadsering</div>
+        <div id="flexBalanceInfo" style="display:none;grid-column:1/-1;padding:8px 12px;background:#1a2640;border:1px solid #2e3148;border-radius:8px;font-size:12px;color:#8b90a7;margin-top:4px"></div>
       </div>
     </div>
   </div>
@@ -211,6 +214,7 @@ input[type=date],input[type=time]{color-scheme:dark}
         <select id="periodType">
           <option value="ferie">Ferie 🌴</option>
           <option value="feriefri">Feriefri 📅</option>
+          <option value="afspadsering">Afspadsering 🔄</option>
           <option value="friuden">Fri u. løn 🚫</option>
         </select>
       </div>
@@ -282,6 +286,93 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
+// SHA-256 hashing - kodeord sammenlignes aldrig i klartekst
+function sha256(str){
+  var buf=new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256',buf).then(function(hash){
+    return '$sha256$'+Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  });
+}
+function isHashed(val){return val&&val.startsWith('$sha256$');}
+function verifyPassword(input,stored){
+  if(isHashed(stored)){return sha256(input).then(function(h){return h===stored;});}
+  return Promise.resolve(input===stored);
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,9);}
+function applyMinStartTime(startStr){
+  if(!currentCompany||currentCompany.code!=='PP001')return startStr;
+  if(!startStr)return startStr;
+  var MIN='05:30';
+  if(startStr<MIN){showToast('⏰ Starttidspunkt justeret til 05:30 (tidligste mødetid)');return MIN;}
+  return startStr;
+}
+
+// ── GPS lokation ──────────────────────────────────────────
+var COMPANY_LOCATIONS={
+  'PP001':{lat:55.6537,lng:12.2969,name:'Højager 2, Taastrup'},
+  'SL001':{lat:55.6502,lng:12.1987,name:'Hedelandsvej 28B, Hedehusene'}
+};
+var GPS_RADIUS=100; // meter
+
+function haversineDistance(lat1,lon1,lat2,lon2){
+  var R=6371000;var dLat=(lat2-lat1)*Math.PI/180;var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function checkGPSAndRun(callback,onBlock){
+  var loc=COMPANY_LOCATIONS[currentCompany?currentCompany.code:''];
+  if(!loc){callback();return;}
+  if(!navigator.geolocation){showGPSBlock(null,'','GPS ikke understøttet på denne enhed');if(onBlock)onBlock();return;}
+  showToast('📍 Tjekker din lokation...');
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      var dist=Math.round(haversineDistance(pos.coords.latitude,pos.coords.longitude,loc.lat,loc.lng));
+      if(dist<=GPS_RADIUS){callback();}
+      else{showGPSBlock(dist,loc.name);if(onBlock)onBlock();}
+    },
+    function(err){
+      var msg=err.code===1?'Slå lokation til i din browser for at tjekke ind':'Kunne ikke hente lokation – prøv igen';
+      showGPSBlock(null,loc.name,msg);if(onBlock)onBlock();
+    },
+    {enableHighAccuracy:true,timeout:10000,maximumAge:30000}
+  );
+}
+
+function showGPSBlock(dist,locName,customMsg){
+  var msg=customMsg||(dist?'Du er '+dist+'m fra arbejdspladsen (max '+GPS_RADIUS+'m). Bevæg dig til: '+locName:'Lokation ikke tilgængelig');
+  // Vis som en tydelig besked i stedet for toast
+  var existing=document.getElementById('gpsBlockMsg');
+  if(!existing){
+    existing=document.createElement('div');
+    existing.id='gpsBlockMsg';
+    existing.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:14px 16px;font-size:13px;color:#991b1b;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+    document.body.appendChild(existing);
+  }
+  existing.innerHTML='📍 <strong>Check-in ikke muligt</strong><br>'+msg;
+  existing.style.display='block';
+  setTimeout(function(){if(existing)existing.style.display='none';},5000);
+}
+
+// ── Pending queue (offline-safe) ──────────────────────────
+function getPending(){var s=ls();return s.pendingQueue||[];}
+function savePending(item){var s=ls();if(!s.pendingQueue)s.pendingQueue=[];s.pendingQueue.push(item);lss(s);}
+function removePending(id){var s=ls();s.pendingQueue=(s.pendingQueue||[]).filter(function(i){return i.id!==id;});lss(s);}
+function syncPending(){
+  var q=getPending();if(!q.length)return;
+  q.forEach(function(item){
+    if(item.type==='entry'){
+      entriesCol().doc(String(item.entry.id)).set(item.entry).then(function(){
+        removePending(item.id);showToast('📤 '+item.entry.hours.toFixed(2)+'t synkroniseret');
+      }).catch(function(){});
+    } else if(item.type==='checkin'){
+      checkinCol().doc(item.state.username).set(item.state).then(function(){
+        removePending(item.id);
+      }).catch(function(){});
+    }
+  });
+}
+
 // Virksomheder
 var COMPANIES = {
   'PP001': {name:'Pakkepiloten', code:'PP001'},
@@ -296,6 +387,19 @@ var selectedType = 'normal';
 var clockTick = null;
 var entriesCache = [];
 var unsubscribeEntries = null;
+var companyPeriodDay = 20; // hentes fra Firestore ved login
+
+function fetchPeriodDay(){
+  db.collection('companies').doc(currentCompany.code).collection('config').doc('settings').get().then(function(doc){
+    if(doc.exists&&doc.data().periodDay){
+      companyPeriodDay=doc.data().periodDay;
+      var s=ls();s['periodDay_'+currentCompany.code]=companyPeriodDay;lss(s);
+      populatePeriods();renderHistory();
+    }
+  }).catch(function(){});
+  // Brug cachet vaerdi straks hvis den findes
+  var s=ls();if(s['periodDay_'+currentCompany.code])companyPeriodDay=s['periodDay_'+currentCompany.code];
+}
 
 // Storage
 function ls(){try{return JSON.parse(localStorage.getItem('tidsreg_employee')||'{}');}catch(e){return{};}}
@@ -340,13 +444,16 @@ function importLicense(input){
   reader.onload=function(ev){
     try{
       var data=JSON.parse(ev.target.result);
-      if(!data.username||!data.password||!data.name){throw new Error('Ugyldig fil');}
+      if(!data.username||!data.name){throw new Error('Ugyldig fil');}
       var companyCode=data.companyCode||'PP001';
       var company=COMPANIES[companyCode];
       if(!company){throw new Error('Ukendt virksomhedskode i fil');}
       var s=ls();if(!s.users)s.users=[];
+      // Bevar evt. gemt kodeord hvis brugeren allerede er oprettet lokalt
+      var existing=s.users.filter(function(u){return u.username===data.username&&u.companyCode===companyCode;});
+      var savedPass=existing.length?existing[0].password:(data.password||'');
       s.users=s.users.filter(function(u){return u.username!==data.username||u.companyCode!==companyCode;});
-      s.users.push({username:data.username,password:data.password,name:data.name,role:data.role||'',type:data.type||'fuldtid',empNo:data.empNo||'',companyCode:companyCode});
+      s.users.push({username:data.username,password:savedPass,name:data.name,role:data.role||'',type:data.type||'fuldtid',empNo:data.empNo||'',companyCode:companyCode});
       lss(s);
       currentCompany=company;
       document.getElementById('loginCompanyName').textContent=company.name;
@@ -356,10 +463,19 @@ function importLicense(input){
       document.getElementById('step1').style.display='none';
       document.getElementById('step2').style.display='block';
       document.getElementById('loginUser').value=data.username;
-      document.getElementById('loginPass').value=data.password;
-      var msg=document.getElementById('licenseMsg');
-      msg.style.display='';msg.style.background='#1a3d2e';msg.style.border='1px solid #2a5c44';msg.style.color='#34d399';
-      msg.textContent='✅ Konto importeret for '+data.name+'! Tryk "Log ind".';
+      // Version 3+: ingen kodeord i filen - brugeren taster selv
+      if(data.licenseVersion>=3||!data.password){
+        document.getElementById('loginPass').value='';
+        var msg=document.getElementById('licenseMsg');
+        msg.style.display='';msg.style.background='#1a3d2e';msg.style.border='1px solid #2a5c44';msg.style.color='#34d399';
+        msg.textContent='✅ Konto importeret for '+data.name+'! Tast din adgangskode og log ind.';
+      } else {
+        // Version 2 (gammel fil med kodeord) - migration
+        document.getElementById('loginPass').value=data.password;
+        var msg=document.getElementById('licenseMsg');
+        msg.style.display='';msg.style.background='#1a3d2e';msg.style.border='1px solid #2a5c44';msg.style.color='#34d399';
+        msg.textContent='✅ Konto importeret for '+data.name+'! Tryk "Log ind".';
+      }
     }catch(err){
       var msg=document.getElementById('licenseMsg');
       msg.style.display='';msg.style.background='#3a1a1a';msg.style.border='1px solid #5c2a2a';msg.style.color='#f87171';
@@ -374,27 +490,53 @@ function doLogin(){
   var u=document.getElementById('loginUser').value.trim();
   var p=document.getElementById('loginPass').value;
   if(!u||!p){showLoginError('Udfyld brugernavn og adgangskode.');return;}
-  if(!currentCompany){showLoginError('Vælg virksomhed først.');return;}
-  // Tjek lokalt
+  if(!currentCompany){showLoginError('Vaelg virksomhed foerst.');return;}
+  // Tjek lokalt (localStorage)
   var users=getLocalUsers();
+  var localUser=null;
   for(var i=0;i<users.length;i++){
-    if(users[i].username===u&&users[i].password===p&&(users[i].companyCode||'PP001')===currentCompany.code){
-      startSession(users[i]);return;
-    }
+    if(users[i].username===u&&(users[i].companyCode||'PP001')===currentCompany.code){localUser=users[i];break;}
   }
-  // Tjek Firebase
+  if(localUser&&localUser.password){
+    verifyPassword(p,localUser.password).then(function(ok){
+      if(ok){
+        // Migration: opgradér klartekst til hash i localStorage
+        if(!isHashed(localUser.password)){
+          sha256(p).then(function(h){
+            var s=ls();
+            for(var i=0;i<s.users.length;i++){if(s.users[i].username===u&&(s.users[i].companyCode||'PP001')===currentCompany.code){s.users[i].password=h;break;}}
+            lss(s);
+          });
+        }
+        startSession(localUser);
+      } else {
+        // Lokal check fejlede - prøv Firebase (kode kan være ændret)
+        checkFirebaseLogin(u,p);
+      }
+    });
+    return;
+  }
+  // Ingen lokal bruger - tjek Firebase direkte
+  checkFirebaseLogin(u,p);
+}
+function checkFirebaseLogin(u,p){
   document.getElementById('loginError').style.display='';
   document.getElementById('loginError').textContent='Tjekker...';
   db.collection('companies').doc(currentCompany.code).collection('employees').doc(u).get().then(function(doc){
     if(doc.exists){
       var emp=doc.data();
-      if(emp.password===p){
-        var s=ls();if(!s.users)s.users=[];
-        s.users=s.users.filter(function(x){return!(x.username===u&&x.companyCode===currentCompany.code);});
-        s.users.push({username:emp.username,password:emp.password,name:emp.name,role:emp.role||'',type:emp.type||'fuldtid',empNo:emp.empNo||'',companyCode:currentCompany.code});
-        lss(s);
-        startSession(emp);
-      }else{showLoginError('Forkert adgangskode.');}
+      verifyPassword(p,emp.password).then(function(ok){
+        if(ok){
+          var s=ls();if(!s.users)s.users=[];
+          // Gem hash lokalt (opgradér klartekst hvis nødvendigt)
+          sha256(p).then(function(h){
+            s.users=s.users.filter(function(x){return!(x.username===u&&x.companyCode===currentCompany.code);});
+            s.users.push({username:emp.username,password:h,name:emp.name,role:emp.role||'',type:emp.type||'fuldtid',empNo:emp.empNo||'',companyCode:currentCompany.code});
+            lss(s);
+          });
+          startSession(emp);
+        }else{showLoginError('Forkert adgangskode.');}
+      });
     }else{showLoginError('Brugernavn ikke fundet.');}
   }).catch(function(){showLoginError('Forkert brugernavn eller adgangskode.');});
 }
@@ -450,6 +592,7 @@ window.addEventListener('load',function(){
 function initApp(){
   startClock();
   document.getElementById('manDate').value=todayStr();
+  fetchPeriodDay();
   subscribeEntries();
   restoreCheckIn();
   checkMissed();
@@ -457,8 +600,15 @@ function initApp(){
 
 function setSyncStatus(online){
   var dot=document.getElementById('syncDot');var txt=document.getElementById('syncTxt');
-  if(online){dot.className='sync-dot';txt.textContent='Live sync';}
-  else{dot.className='sync-dot offline';txt.textContent='Offline';}
+  var pending=getPending().length;
+  if(online){
+    dot.className='sync-dot';
+    txt.textContent=pending>0?'Synkroniserer '+pending+'...':'Live sync';
+    if(pending>0)syncPending();
+  } else {
+    dot.className='sync-dot offline';
+    txt.textContent=pending>0?'Offline · '+pending+' afventer':'Offline';
+  }
 }
 
 // ── Firebase – per virksomhed ─────────────────────────────
@@ -473,6 +623,8 @@ function subscribeEntries(){
       snap.forEach(function(d){entriesCache.push(d.data());});
       setSyncStatus(true);populatePeriods();renderHistory();
     },function(){setSyncStatus(false);});
+  // Sync pending entries naar forbindelsen er oppe
+  db.enableNetwork().then(function(){syncPending();}).catch(function(){});
 }
 
 function saveEntry(entry){
@@ -521,14 +673,23 @@ function _setBtnLoading(id, loading, label) {
 function checkIn(){
   _withLock(function(){
     _setBtnLoading('btnIn', true);
-    var now = new Date();
-    var state={username:currentUser.username,name:currentUser.name,checkedIn:true,startTime:Date.now(),start:pad(now.getHours())+':'+pad(now.getMinutes()),date:todayStr(),dayType:selectedType};
-    checkinCol().doc(currentUser.username).set(state).then(function(){
-      var s=ls();s.checkInState=state;lss(s);
-      setCheckInUI(true);showToast('✅ Tjekket ind!');
-    }).catch(function(err){
-      showToast('⚠️ Kunne ikke tjekke ind – prøv igen');
-    }).finally(function(){
+    checkGPSAndRun(function(){
+      var now = new Date();
+      var state={username:currentUser.username,name:currentUser.name,checkedIn:true,startTime:Date.now(),start:pad(now.getHours())+':'+pad(now.getMinutes()),date:todayStr(),dayType:selectedType};
+      checkinCol().doc(currentUser.username).set(state).then(function(){
+        var s=ls();s.checkInState=state;lss(s);
+        setCheckInUI(true);showToast('✅ Tjekket ind!');
+      }).catch(function(err){
+        savePending({id:uid(),type:'checkin',state:state,savedAt:Date.now()});
+        var s=ls();s.checkInState=state;lss(s);
+        setCheckInUI(true);
+        showToast('📴 Offline – tjekket ind lokalt, synkroniseres automatisk');
+      }).finally(function(){
+        _setBtnLoading('btnIn', false);
+        _actionLock = false;
+      });
+    }, function(){
+      // GPS blokerede - frigiv lås
       _setBtnLoading('btnIn', false);
       _actionLock = false;
     });
@@ -538,18 +699,31 @@ function checkOut(){
   _withLock(function(){
     var cs=loadCheckInState();if(!cs||!cs.checkedIn){_actionLock=false;return;}
     _setBtnLoading('btnOut', true);
-    var endTime=Date.now();
-    var hours=Math.round(((endTime-cs.startTime)/3600000)*100)/100;
-    var entry={id:endTime,username:currentUser.username,name:currentUser.name,date:cs.date,start:msToTime(cs.startTime),end:msToTime(endTime),hours:hours,type:cs.dayType||selectedType||'normal',method:'auto',note:'',approved:false};
-    var newState={username:currentUser.username,checkedIn:false};
-    entriesCol().doc(String(entry.id)).set(entry).then(function(){
-      return checkinCol().doc(currentUser.username).set(newState);
-    }).then(function(){
-      var s=ls();s.checkInState=newState;lss(s);
-      setCheckInUI(false);showToast('🚪 Udtjekket – '+hours.toFixed(2)+' timer gemt');
-    }).catch(function(){
-      showToast('⚠️ Kunne ikke gemme udtjekning – prøv igen');
-    }).finally(function(){
+    checkGPSAndRun(function(){
+      var endTime=Date.now();
+      var rawStart=msToTime(cs.startTime);
+      var corrStart=applyMinStartTime(rawStart);
+      var startMs=cs.startTime;
+      if(corrStart!==rawStart){var p=corrStart.split(':');var d2=new Date(cs.startTime);d2.setHours(parseInt(p[0]),parseInt(p[1]),0,0);startMs=d2.getTime();}
+      var hours=Math.round(((endTime-startMs)/3600000)*100)/100;
+      var entry={id:uid(),username:currentUser.username,name:currentUser.name,date:cs.date,start:corrStart,end:msToTime(endTime),hours:hours,type:cs.dayType||selectedType||'normal',method:'auto',note:'',approved:false};
+      var newState={username:currentUser.username,checkedIn:false};
+      entriesCol().doc(String(entry.id)).set(entry).then(function(){
+        return checkinCol().doc(currentUser.username).set(newState);
+      }).then(function(){
+        var s=ls();s.checkInState=newState;lss(s);
+        setCheckInUI(false);showToast('🚪 Udtjekket – '+hours.toFixed(2)+' timer gemt');
+      }).catch(function(){
+        savePending({id:uid(),type:'entry',entry:entry,savedAt:Date.now()});
+        savePending({id:uid(),type:'checkin',state:newState,savedAt:Date.now()});
+        var s=ls();s.checkInState=newState;lss(s);
+        setCheckInUI(false);
+        showToast('📴 Offline – '+hours.toFixed(2)+'t gemt lokalt, synkroniseres automatisk');
+      }).finally(function(){
+        _setBtnLoading('btnOut', false);
+        _actionLock = false;
+      });
+    }, function(){
       _setBtnLoading('btnOut', false);
       _actionLock = false;
     });
@@ -591,8 +765,12 @@ function saveMissed(){
   if(!t){showToast('⚠️ Angiv et tidspunkt');return;}
   var cs=loadCheckInState();
   var endDate=new Date(cs.startTime);var parts=t.split(':');endDate.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
-  var hours=Math.max(0,Math.round(((endDate.getTime()-cs.startTime)/3600000)*100)/100);
-  var entry={id:Date.now(),username:currentUser.username,name:currentUser.name,date:cs.date,start:msToTime(cs.startTime),end:t,hours:hours,type:cs.dayType||'normal',method:'missed-fix',note:'Rettet: glemt udtjekning',approved:false};
+  var rawMissedStart=msToTime(cs.startTime);
+  var corrMissedStart=applyMinStartTime(rawMissedStart);
+  var missedStartMs=cs.startTime;
+  if(corrMissedStart!==rawMissedStart){var p2=corrMissedStart.split(':');var d3=new Date(cs.startTime);d3.setHours(parseInt(p2[0]),parseInt(p2[1]),0,0);missedStartMs=d3.getTime();}
+  var hours=Math.max(0,Math.round(((endDate.getTime()-missedStartMs)/3600000)*100)/100);
+  var entry={id:uid(),username:currentUser.username,name:currentUser.name,date:cs.date,start:corrMissedStart,end:t,hours:hours,type:cs.dayType||'normal',method:'missed-fix',note:'Rettet: glemt udtjekning',approved:false};
   var newState={username:currentUser.username,checkedIn:false};
   var btn=document.querySelector('#missedModal .btn-primary');
   if(btn){btn.disabled=true;btn.textContent='⏳';}
@@ -607,35 +785,50 @@ function saveMissed(){
     if(btn){btn.disabled=false;btn.textContent='Gem';}
   });
 }
+function getEaster(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,month-1,day);}
+function addDays(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function isHoliday(ds){var d=new Date(ds);var m=d.getMonth()+1,day=d.getDate(),y=d.getFullYear();if((m===1&&day===1)||(m===12&&[24,25,26,31].indexOf(day)>=0))return true;var easter=getEaster(y);var dates=[easter,addDays(easter,1),addDays(easter,-3),addDays(easter,-2),addDays(easter,39),addDays(easter,49),addDays(easter,50)];for(var i=0;i<dates.length;i++){if(dates[i].toISOString().split('T')[0]===ds)return true;}return false;}
 function getDayHours(dateStr){
-  // Fredag = 5, alle andre = 7.4
-  var d=new Date(dateStr||todayStr());
-  return d.getDay()===5 ? 7.0 : 7.4;
+  var ds=dateStr||todayStr();var d=new Date(ds);
+  if(isHoliday(ds)||d.getDay()===0||d.getDay()===6)return 0;
+  return d.getDay()===5?7.0:7.4;
 }
 function setDayType(type,el){
   selectedType=type;
   var btns=document.querySelectorAll('.daytype-btn');
   for(var i=0;i<btns.length;i++)btns[i].classList.remove('selected');
   el.classList.add('selected');
-  // Vis/skjul knapper afhængigt af dagtype
   var isWork=(type==='normal');
   document.getElementById('clockBtns').style.display=isWork?'grid':'none';
   document.getElementById('elapsedDiv').style.display='none';
   var autoBtn=document.getElementById('autoRegBtn');
-  if(!isWork){
+  var flexInfo=document.getElementById('flexBalanceInfo');
+  if(type==='afspadsering'){
+    // Hent saldo fra Firestore og vis
+    flexInfo.style.display='block';flexInfo.textContent='⏳ Henter saldo...';
+    autoBtn.style.display='flex';autoBtn.textContent='💾 Registrer Afspadsering (7.4 t)';
+    db.collection('companies').doc(currentCompany.code).collection('employees').doc(currentUser.username).get().then(function(doc){
+      var bal=doc.exists?(doc.data().flexBalance||0):0;
+      flexInfo.innerHTML='🔄 Din afspadseringssaldo: <strong style="color:'+(bal>0?'#38bdf8':bal<0?'#f87171':'#8b90a7')+'">'+bal.toFixed(2)+'t</strong>';
+      autoBtn.textContent='💾 Registrer Afspadsering (7.4 t)';
+    }).catch(function(){flexInfo.textContent='Kunne ikke hente saldo';});
+  } else if(!isWork){
+    flexInfo.style.display='none';
     var typeLabels={ferie:'Ferie 🌴',feriefri:'Feriefri 📅',friuden:'Fri u. løn 🚫'};
     var h=getDayHours();
     autoBtn.style.display='flex';
-    autoBtn.textContent='💾 Registrer '+typeLabels[type]+' ('+h+' t)';
+    autoBtn.textContent='💾 Registrer '+(typeLabels[type]||type)+' ('+h+' t)';
   } else {
+    flexInfo.style.display='none';
     autoBtn.style.display='none';
   }
 }
 function getWeekdays(from, to){
   var days=[];var d=new Date(from);var end=new Date(to);
   while(d<=end){
+    var ds=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
     var day=d.getDay();
-    if(day!==0&&day!==6) days.push(d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()));
+    if(day!==0&&day!==6&&!isHoliday(ds)) days.push(ds);
     d.setDate(d.getDate()+1);
   }
   return days;
@@ -665,7 +858,7 @@ function savePeriod(){
   var batch=db.batch();
   for(var i=0;i<toSave.length;i++){
     var d=toSave[i];
-    var entry={id:Date.now()+i,username:currentUser.username,name:currentUser.name,
+    var entry={id:uid(),username:currentUser.username,name:currentUser.name,
       date:d,start:'',end:'',hours:getDayHours(d),type:type,method:'period',note:'',approved:false};
     batch.set(entriesCol().doc(String(entry.id)),entry);
   }
@@ -696,12 +889,25 @@ function onManTypeChange(){
 }
 function autoRegisterDay(){
   if(_actionLock)return;
-  var hours=getDayHours();
   var today=todayStr();
+  var hours=getDayHours(today);
+  if(hours===0){showToast('⚠️ Helligdag eller weekend – ingen normal arbejdstid');return;}
   var existing=entriesCache.filter(function(e){return e.date===today&&e.type===selectedType;});
   if(existing.length){showToast('⚠️ Du har allerede registreret '+selectedType+' i dag');return;}
+  if(selectedType==='afspadsering'){
+    // Tjek saldo inden registrering
+    db.collection('companies').doc(currentCompany.code).collection('employees').doc(currentUser.username).get().then(function(doc){
+      var bal=doc.exists?(doc.data().flexBalance||0):0;
+      if(bal<hours){showToast('⚠️ Ikke nok afspadsering til gode ('+bal.toFixed(2)+'t tilbage)');return;}
+      _doAutoRegister(today,hours);
+    }).catch(function(){showToast('⚠️ Kunne ikke verificere saldo');});
+    return;
+  }
+  _doAutoRegister(today,hours);
+}
+function _doAutoRegister(today,hours){
   var entry={
-    id:Date.now(),username:currentUser.username,name:currentUser.name,
+    id:uid(),username:currentUser.username,name:currentUser.name,
     date:today,start:'',end:'',hours:hours,
     type:selectedType,method:'auto-day',note:'',approved:false
   };
@@ -731,11 +937,12 @@ function saveManual(){
   var hours,isWork=(type==='normal'||type==='fravoer');
   if(isWork){
     if(!start||!end){showToast('⚠️ Udfyld start og sluttid');return;}
+    start=applyMinStartTime(start);
     hours=Math.max(0,Math.round((timeToH(end)-timeToH(start)-brk/60)*100)/100);
   } else {
     hours=getDayHours(date);start='';end='';
   }
-  var entry={id:Date.now(),username:currentUser.username,name:currentUser.name,date:date,start:start,end:end,hours:hours,breakMin:brk,type:type,method:'manual',note:note,approved:false};
+  var entry={id:uid(),username:currentUser.username,name:currentUser.name,date:date,start:start,end:end,hours:hours,breakMin:brk,type:type,method:'manual',note:note,approved:false};
   var btn=document.querySelector('#tab-manual .card:last-child .btn-primary');
   if(btn){btn.disabled=true;btn.textContent='⏳ Gemmer...';}
   entriesCol().doc(String(entry.id)).set(entry).then(function(){
@@ -750,8 +957,8 @@ function saveManual(){
 }
 
 // ── Periods ───────────────────────────────────────────────
-function dateToPeriod(ds){var d=new Date(ds);var day=d.getDate(),mo=d.getMonth(),yr=d.getFullYear();if(day>=20)return yr+'-'+pad(mo+1);if(mo===0)return(yr-1)+'-12';return yr+'-'+pad(mo);}
-function periodDates(p){var parts=p.split('-');var y=parseInt(parts[0]),m=parseInt(parts[1]);return{start:new Date(y,m-1,20),end:m===12?new Date(y+1,0,19):new Date(y,m,19)};}
+function dateToPeriod(ds){var startDay=companyPeriodDay||20;var d=new Date(ds);var day=d.getDate(),mo=d.getMonth(),yr=d.getFullYear();if(day>=startDay)return yr+'-'+pad(mo+1);if(mo===0)return(yr-1)+'-12';return yr+'-'+pad(mo);}
+function periodDates(p){var startDay=companyPeriodDay||20;var endDay=startDay-1;var parts=p.split('-');var y=parseInt(parts[0]),m=parseInt(parts[1]);return{start:new Date(y,m-1,startDay),end:m===12?new Date(y+1,0,endDay):new Date(y,m,endDay)};}
 function periodLabel(p){var pd=periodDates(p);var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];return pd.start.getDate()+'. '+mo[pd.start.getMonth()]+' – '+pd.end.getDate()+'. '+mo[pd.end.getMonth()]+' '+pd.end.getFullYear();}
 function populatePeriods(){
   var set={};set[dateToPeriod(todayStr())]=true;
@@ -801,5 +1008,8 @@ function timeToH(t){var p=t.split(':');return parseInt(p[0])+parseInt(p[1])/60;}
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2500);}
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js', {scope: '/MinTid/medarbejder/'}).catch(function(e){console.log('SW:',e);});});}
 </script>
+<footer style="text-align:center;padding:18px 16px 24px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:32px">
+  Copyright &copy; <a href="mailto:info@smartapps.dk" style="color:#9ca3af;text-decoration:none">smartapps</a> &nbsp;|&nbsp; <a href="mailto:info@smartapps.dk" style="color:#9ca3af;text-decoration:none">info@smartapps.dk</a>
+</footer>
 </body>
 </html>
