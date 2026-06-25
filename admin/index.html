@@ -12,21 +12,19 @@
 <title>MinTid – Arbejdsgiver</title>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f5fb;color:#1e2235;min-height:100vh}
 #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f0f2f5;padding:20px}
 .login-card{background:#fff;border-radius:16px;padding:36px 28px;width:100%;max-width:380px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.12);color:#1e2235}
-.login-logo{width:58px;height:58px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px}
-.login-card h1{font-size:22px;font-weight:700;margin-bottom:4px}
 .sub{color:#6b7280;font-size:14px;margin-bottom:24px}
-.company-select-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.company-btn{padding:16px 10px;border-radius:14px;border:2px solid #e2e4ef;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:#1e2235;background:#fff;text-align:center;transition:all .15s}
-.company-btn:hover{border-color:#2563eb;background:#eff4ff;color:#2563eb}
-.company-btn.selected{border-color:#2563eb;background:#eff4ff;color:#2563eb}
-.company-btn-icon{font-size:24px;display:block;margin-bottom:6px}
-.company-btn-code{font-size:10px;color:#9ca3af;font-weight:600;margin-top:3px}
+.login-role-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.role-btn{padding:16px 10px;border-radius:14px;border:2px solid #e2e4ef;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:#1e2235;background:#fff;text-align:center;transition:all .15s}
+.role-btn:hover{border-color:#2563eb;background:#eff4ff;color:#2563eb}
+.role-btn.selected{border-color:#2563eb;background:#eff4ff;color:#2563eb}
+.role-btn-icon{font-size:24px;display:block;margin-bottom:6px}
 .form-group{margin-bottom:14px;text-align:left}
 .form-group label{display:block;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 .form-group input,.form-group select{width:100%;padding:12px 14px;border:1.5px solid #e2e4ef;border-radius:10px;color:#1e2235;font-family:inherit;font-size:16px;outline:none;background:#fff;-webkit-appearance:none}
@@ -39,11 +37,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Ar
 .btn-danger{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
 .btn-outline{background:transparent;color:#6b7280;border:1.5px solid #e2e4ef;width:auto;padding:9px 16px}
 .btn-purple{background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd}
+.btn-amber{background:#fffbeb;color:#d97706;border:1px solid #fcd34d}
+.btn-gray{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
 .btn-sm{padding:6px 12px;font-size:12px;width:auto}
 #app{display:none;padding-bottom:20px}
 .topbar{background:#fff;border-bottom:1px solid #e2e4ef;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.06)}
 .topbar-brand{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
-.company-badge{font-size:11px;background:#eff4ff;color:#2563eb;border:1px solid #bfdbfe;padding:3px 10px;border-radius:20px;font-weight:700}
+.revisor-badge{font-size:11px;background:#fffbeb;color:#d97706;border:1px solid #fcd34d;padding:3px 10px;border-radius:20px;font-weight:700}
 .live-badge{display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;color:#059669;border:1px solid #6ee7b7;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
 .live-dot{width:7px;height:7px;border-radius:50%;background:#059669;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -75,6 +75,8 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
 th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;border-bottom:2px solid #e2e4ef;background:#f9fafb;white-space:nowrap}
 td{padding:9px 10px;border-bottom:1px solid #e2e4ef;vertical-align:middle}
 tr:last-child td{border-bottom:none}
+tr.row-pending{background:#fffdf0}
+tr.row-rejected{background:#fff5f5}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase}
 .tag-normal{background:#eff4ff;color:#2563eb}.tag-ferie{background:#e0f2fe;color:#0284c7}
 .tag-feriefri{background:#f5f3ff;color:#7c3aed}.tag-friuden{background:#fef2f2;color:#dc2626}
@@ -82,8 +84,12 @@ tr:last-child td{border-bottom:none}
 .tag-pending{background:#fffbeb;color:#d97706;border:1px solid #fcd34d}
 .tag-rejected{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
 .tag-deltid{background:#f0fdf4;color:#16a34a}.tag-fuldtid{background:#eff4ff;color:#2563eb}
+.tag-chauffor{background:#eff4ff;color:#2563eb}.tag-gls{background:#fff7ed;color:#c2410c}.tag-medhjaelper{background:#f5f3ff;color:#7c3aed}.tag-montering{background:#e0f2fe;color:#0369a1}
+.tag-archived{background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db}
 .alert{padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;line-height:1.5}
 .alert-info{background:#eff4ff;border:1px solid #bfdbfe;color:#2563eb}
+.alert-warn{background:#fffbeb;border:1px solid #fcd34d;color:#d97706}
+.alert-danger{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:200}
 .modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-height:85vh;overflow-y:auto}
 .modal h3{font-size:18px;font-weight:700;margin-bottom:14px}
@@ -93,10 +99,36 @@ tr:last-child td{border-bottom:none}
 .sum-row:last-child{border-bottom:none;font-weight:700}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #toast{position:fixed;bottom:24px;right:16px;background:#1e3a5f;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none;max-width:calc(100vw - 32px)}
+.revisor-info-bar{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:8px}
+.bulk-bar{position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:#fff;padding:12px 16px;display:none;align-items:center;justify-content:space-between;gap:10px;z-index:150;flex-wrap:wrap}
+.bulk-bar.visible{display:flex}
+.bulk-bar-label{font-size:13px;font-weight:700;white-space:nowrap}
+.bulk-bar-btns{display:flex;gap:8px;flex-wrap:wrap}
+.bulk-btn{padding:8px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;border:none;cursor:pointer}
+.bulk-btn-approve{background:#059669;color:#fff}
+.bulk-btn-reject{background:#dc2626;color:#fff}
+.bulk-btn-delete{background:#374151;color:#fff;border:1px solid #6b7280}
+.entry-checkbox{width:16px;height:16px;cursor:pointer;accent-color:#2563eb}
+td.cb-cell{width:32px;padding:9px 4px 9px 10px}
+th.cb-cell{width:32px;padding:8px 4px 8px 10px}
+tr.row-selected{background:#eff4ff!important}
+.select-all-wrap{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12px;color:#6b7280;cursor:pointer}
+.select-all-wrap input{accent-color:#2563eb}
+.revisor-list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #e2e4ef;border-radius:10px;margin-bottom:8px;background:#f9fafb}
+.revisor-list-name{font-weight:700;font-size:13px}
+.revisor-list-user{font-size:11px;color:#6b7280;margin-top:2px}
+/* Archive specific */
+.archive-card{background:#fff;border:1px solid #e2e4ef;border-radius:12px;padding:14px;margin-bottom:10px;opacity:.9}
+.archive-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.archive-name{font-weight:700;font-size:14px;color:#374151}
+.archive-meta{font-size:11px;color:#9ca3af;line-height:1.7;margin-top:4px}
+.archive-dates{font-size:12px;color:#6b7280;background:#f3f4f6;border-radius:6px;padding:4px 8px;display:inline-block;margin-top:4px}
+.archive-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:20px">
@@ -106,33 +138,39 @@ tr:last-child td{border-bottom:none}
       <div style="font-size:28px;font-weight:800;color:#1e2235;letter-spacing:-0.5px">Min<span style="color:#2563eb">Tid</span></div>
       <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:2px;margin-top:2px">Arbejdsgiver</div>
     </div>
-    <div class="sub" style="margin-top:4px">Indtast virksomhedskode og log ind</div>
-
-    <!-- Trin 1: Virksomhedskode -->
-    <div id="step1">
-      <div class="form-group">
-        <label>Virksomhedskode</label>
+    <div id="step0">
+      <div class="sub">Vælg din rolle for at fortsætte</div>
+      <div class="login-role-btns">
+        <button class="role-btn" onclick="selectRole('admin',this)"><span class="role-btn-icon">🏢</span>Administrator</button>
+        <button class="role-btn" onclick="selectRole('revisor',this)"><span class="role-btn-icon">📊</span>Revisor</button>
+      </div>
+    </div>
+    <div id="step1" style="display:none">
+      <div class="form-group"><label>Virksomhedskode</label>
         <input type="text" id="companyCodeInput" placeholder="F.eks. PP001" autocapitalize="characters" autocorrect="off" style="text-transform:uppercase">
       </div>
       <button class="btn btn-primary" onclick="goToLogin()">Fortsæt</button>
       <div id="companyError" class="error-msg" style="display:none"></div>
+      <button class="btn btn-outline" style="margin-top:10px;width:100%;justify-content:center" onclick="backToStep0()">← Skift rolle</button>
     </div>
-
-    <!-- Trin 2: Login -->
     <div id="step2" style="display:none">
-      <div style="background:#eff4ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-bottom:16px;text-align:left">
-        <div style="font-weight:700;color:#2563eb;font-size:14px" id="selectedCompanyName"></div>
+      <div style="border-radius:10px;padding:10px 14px;margin-bottom:16px;text-align:left" id="companyInfoBox">
+        <div style="font-weight:700;font-size:14px" id="selectedCompanyName"></div>
         <div style="font-size:11px;color:#6b7280;margin-top:2px" id="selectedCompanyCode"></div>
       </div>
-      <div class="form-group"><label>Brugernavn</label><input type="text" id="loginUser" placeholder="admin" autocapitalize="none" autocorrect="off"></div>
+      <div class="form-group"><label>Brugernavn</label><input type="text" id="loginUser" placeholder="brugernavn" autocapitalize="none" autocorrect="off"></div>
       <div class="form-group"><label>Adgangskode</label><input type="password" id="loginPass" placeholder="••••••••"></div>
       <button class="btn btn-primary" onclick="doLogin()">Log ind</button>
       <div id="loginError" class="error-msg" style="display:none"></div>
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="openForgot()" style="background:none;border:none;color:#6b7280;font-size:12px;cursor:pointer;text-decoration:underline">Glemt adgangskode?</button>
+      </div>
       <button class="btn btn-outline" style="margin-top:10px;width:100%;justify-content:center" onclick="backToStep1()">← Skift virksomhed</button>
     </div>
   </div>
 </div>
 
+<!-- ADMIN APP -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-brand">🏢 <span id="companyName"></span></div>
@@ -147,9 +185,11 @@ tr:last-child td{border-bottom:none}
     <button class="tab" onclick="showTab('t-period',this)">📅 Løn</button>
     <button class="tab" onclick="showTab('t-export',this)">📤 Eksport</button>
     <button class="tab" onclick="showTab('t-employees',this)">👥 Medarbejdere</button>
+    <button class="tab" onclick="showTab('t-archive',this)">📦 Arkiv</button>
     <button class="tab" onclick="showTab('t-settings',this)">⚙️ Indstillinger</button>
   </div>
 
+  <!-- LIVE -->
   <div id="t-live" class="tab-content active">
     <div style="font-size:12px;color:#9ca3af;margin-bottom:12px" id="lastUpdated">Forbinder...</div>
     <div class="stats-grid" id="liveStats"></div>
@@ -159,6 +199,7 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <!-- GODKEND -->
   <div id="t-approve" class="tab-content">
     <div class="toolbar">
       <select id="appPeriod" onchange="renderApprove()"></select>
@@ -167,52 +208,85 @@ tr:last-child td{border-bottom:none}
     <div id="approveList"></div>
   </div>
 
+  <!-- LØN -->
   <div id="t-period" class="tab-content">
     <div class="toolbar">
       <select id="perPeriod" onchange="renderPeriod()"></select>
       <select id="perEmp" onchange="renderPeriod()"><option value="">Alle</option></select>
     </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">🔄 Afspadsering</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px">Afslut lønperioden for at opdatere medarbejdernes afspadseringssaldo fra OT-timer. Tidligere afspadsering fratrækkes automatisk.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="width:auto" onclick="closePeriodFlex()">✅ Afslut periode & opdater saldo</button>
+        <button class="btn btn-outline" style="width:auto" onclick="recomputeAllFlex()">🔁 Genberegn alle saldi</button>
+      </div>
+      <div id="flexResult" style="margin-top:10px"></div>
+    </div>
     <div id="periodContent"></div>
   </div>
 
+  <!-- EKSPORT -->
   <div id="t-export" class="tab-content">
     <div class="card">
       <div class="card-title">📥 Importer timeseddel fra Excel</div>
-      <div class="alert alert-info" style="margin-bottom:12px">Importér en Excel-fil med timesedler (ét ark per medarbejder). Rækkerne matches automatisk til eksisterende medarbejdere via navn.</div>
-      <div class="form-group">
-        <label>Vælg Excel-fil (.xlsx)</label>
+      <div class="alert alert-info" style="margin-bottom:12px">Importér Excel-fil med timesedler (ét ark per medarbejder). Matches automatisk via navn.</div>
+      <div class="form-group"><label>Vælg Excel-fil (.xlsx)</label>
         <input type="file" id="importFile" accept=".xlsx" style="width:100%;padding:10px 0;font-size:14px;color:#1e2235">
       </div>
       <div id="importPreview" style="display:none;margin-top:12px"></div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn btn-primary" style="flex:1;width:auto" onclick="parseImportFile()">🔍 Analysér fil</button>
-        <button class="btn btn-success" style="flex:1;width:auto;display:none" id="doImportBtn" onclick="doImport()">✅ Importer registreringer</button>
+        <button class="btn btn-success" style="flex:1;width:auto;display:none" id="doImportBtn" onclick="doImport()">✅ Importer</button>
       </div>
     </div>
     <div class="card">
       <div class="card-title">📊 Eksport til revisor</div>
       <div class="form-group"><label>Lønperiode</label><select id="expPeriod"></select></div>
-      <div class="form-group" style="margin-top:10px"><label>Medarbejder</label><select id="expEmp"><option value="">Alle</option></select></div>
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <button class="btn btn-success" style="flex:1;width:auto" onclick="exportExcel()">📊 Excel</button>
-        <button class="btn btn-purple" style="flex:1;width:auto" onclick="exportPDF()">📄 PDF</button>
+      <div class="form-group" style="margin-top:10px"><label>Medarbejder</label><select id="expEmp"><option value="">Alle aktive</option></select></div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Inkludér arkiverede medarbejdere</label>
+        <select id="expArchived">
+          <option value="no">Nej – kun aktive</option>
+          <option value="yes">Ja – inkludér stoppede medarbejdere</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Godkendelsesstatus</label>
+        <select id="expFilter">
+          <option value="approved">Kun godkendte</option>
+          <option value="all">Alle (godkendte + ikke-godkendte)</option>
+          <option value="pending">Kun ikke-godkendte</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn btn-success" style="flex:1;width:auto;min-width:80px" onclick="exportExcel()">📊 Excel</button>
+        <button class="btn btn-amber" style="flex:1;width:auto;min-width:80px" onclick="exportCSV()">📋 CSV</button>
+        <button class="btn btn-purple" style="flex:1;width:auto;min-width:80px" onclick="exportPDF()">📄 PDF</button>
       </div>
     </div>
   </div>
 
+  <!-- MEDARBEJDERE -->
   <div id="t-employees" class="tab-content">
     <div class="card">
-      <div class="card-title">👥 Medarbejderliste</div>
+      <div class="card-title">👥 Aktive medarbejdere</div>
       <div id="empList"><p style="color:#9ca3af;font-size:14px">Indlæser...</p></div>
       <button class="btn btn-primary" style="margin-top:14px" onclick="openAddEmp()">+ Tilføj medarbejder</button>
     </div>
   </div>
 
+  <!-- ARKIV -->
+  <div id="t-archive" class="tab-content">
+    <div class="alert alert-info">Arkiverede medarbejdere kan ikke logge ind. Deres historiske data er gemt og kan eksporteres.</div>
+    <div id="archiveList"><p style="color:#9ca3af;font-size:14px;margin-top:12px">Indlæser...</p></div>
+  </div>
+
+  <!-- INDSTILLINGER -->
   <div id="t-settings" class="tab-content">
     <div class="card">
       <div class="card-title">📋 Overenskomst</div>
-      <div class="form-group">
-        <label>Vælg overenskomst</label>
+      <div class="form-group"><label>Vælg overenskomst</label>
         <select id="setOvens" onchange="onOvensChange()">
           <option value="ka">KA/Krifa Transport</option>
           <option value="dtl">DTL/3F Transport</option>
@@ -223,8 +297,15 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="card">
       <div class="card-title">⏱ Arbejdstidsregler</div>
-      <div class="form-group"><label>Normal daglig arbejdstid (timer)</label><input type="number" id="setNorm" value="7.4" step="0.1" inputmode="decimal"></div>
-      <div class="form-group" style="margin-top:10px"><label>Normal arbejdstid start (lokalaftale)</label><input type="time" id="setDayStart" value="05:00"></div>
+      <div class="form-group"><label>Loenperiode starter den</label>
+        <select id="setPeriodDay">
+          <option value="19">19. (periode: 19. → 18.)</option>
+          <option value="20" selected>20. (periode: 20. → 19.)</option>
+          <option value="21">21. (periode: 21. → 20.)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:10px"><label>Normal daglig arbejdstid (timer)</label><input type="number" id="setNorm" value="7.4" step="0.1" inputmode="decimal"></div>
+      <div class="form-group" style="margin-top:10px"><label>Normal arbejdstid start</label><input type="time" id="setDayStart" value="05:00"></div>
       <div class="form-group" style="margin-top:10px"><label>Normal arbejdstid slut</label><input type="time" id="setDayEnd" value="18:00"></div>
       <div class="form-group" style="margin-top:10px"><label>Nattillæg start</label><input type="time" id="setNightStart" value="22:00"></div>
       <div class="form-group" style="margin-top:10px"><label>OT grænse (timer før høj OT-sats)</label><input type="number" id="setOTLimit" value="3" step="0.5" inputmode="decimal"></div>
@@ -235,10 +316,143 @@ tr:last-child td{border-bottom:none}
       <div class="form-group"><label>Nuværende kode</label><input type="password" id="setCurr"></div>
       <div class="form-group" style="margin-top:10px"><label>Ny kode</label><input type="password" id="setNew"></div>
       <button class="btn btn-outline" style="margin-top:12px" onclick="changePass()">Skift kode</button>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e5e7eb">
+        <div class="form-group"><label>Recovery email (bruges hvis kode glemmes)</label>
+          <input type="email" id="setRecoveryEmail" placeholder="admin@eksempel.dk">
+        </div>
+        <div id="emailjsSetup" style="margin-top:8px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;display:none">
+          ⚠️ EmailJS er ikke sat op. Tilfoej din <strong>Public Key</strong> og <strong>Service ID</strong> i koden for at aktivere email-reset.<br>
+          <a href="https://www.emailjs.com" target="_blank" style="color:#2563eb">Opret gratis konto →</a>
+        </div>
+        <button class="btn btn-outline" style="margin-top:10px" onclick="saveRecoveryEmail()">💾 Gem recovery email</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Revisor adgange</div>
+      <div class="alert alert-info" style="margin-bottom:12px">Revisorer kan logge ind og eksportere data. De kan ikke ændre eller godkende noget.</div>
+      <div id="revisorList"><p style="color:#9ca3af;font-size:13px">Indlæser...</p></div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="openAddRevisor()">+ Opret revisor adgang</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🧹 Ryd automatiske noter</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px">Nulstiller alle auto-genererede noter ("Importeret fra Excel", "Rettet af admin: glemt udtjekning", "Oprettet af admin") på eksisterende registreringer. Erstatter dem med tomt Note-felt.</p>
+      <div id="cleanNotesResult" style="display:none;margin-bottom:10px"></div>
+      <button class="btn btn-outline" style="border-color:#f59e0b;color:#92400e" onclick="cleanAutoNotes()">🧹 Ryd gamle auto-noter</button>
+    </div>
+  </div>
+</div>
+<div class="bulk-bar" id="bulkBar">
+  <span class="bulk-bar-label" id="bulkBarLabel">0 valgt</span>
+  <div class="bulk-bar-btns">
+    <button class="bulk-btn bulk-btn-approve" onclick="bulkAction('approve')">✅ Godkend</button>
+    <button class="bulk-btn bulk-btn-reject" onclick="bulkAction('reject')">❌ Afvis</button>
+    <button class="bulk-btn" style="background:#7c3aed;color:#fff" onclick="openBulkType()">🔄 Skift type</button>
+    <button class="bulk-btn bulk-btn-delete" onclick="bulkAction('delete')">🗑 Slet</button>
+    <button class="bulk-btn" style="background:#4b5563;color:#fff" onclick="clearSelection()">✕ Afvælg</button>
+  </div>
+</div>
+
+<!-- OPRET KLADDE MODAL -->
+<div id="addDraftModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>➕ Opret registrering</h3>
+    <p style="color:#6b7280;font-size:13px;margin-bottom:14px">Oprettes som godkendt direkte. Medarbejder: <strong id="draftEmpName"></strong></p>
+    <div class="form-group"><label>Dato</label><input type="date" id="draftDate"></div>
+    <div class="row2" style="margin-top:10px">
+      <div class="form-group"><label>Start</label><input type="time" id="draftStart" value="08:00"></div>
+      <div class="form-group"><label>Slut</label><input type="time" id="draftEnd" value="16:00"></div>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label>Pause (min)</label><input type="number" id="draftBreak" value="0" inputmode="numeric"></div>
+    <div class="form-group" style="margin-top:10px"><label>Type</label>
+      <select id="draftType">
+        <option value="normal">Normalt arbejde</option>
+        <option value="ferie">Ferie</option>
+        <option value="feriefri">Feriefri</option>
+        <option value="friuden">Fri u. løn</option>
+        <option value="fravoer">Fravær</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label>Note (valgfrit)</label><input type="text" id="draftNote" placeholder="F.eks. Rettet af admin"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeDraft()">Annuller</button>
+      <button class="btn btn-primary" onclick="saveDraft()">✅ Opret og godkend</button>
     </div>
   </div>
 </div>
 
+<!-- BULK SKIFT TYPE MODAL -->
+<div id="bulkTypeModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>🔄 Skift arbejdstype</h3>
+    <p style="color:#6b7280;font-size:13px;margin-bottom:14px" id="bulkTypeInfo">Ændrer type på <strong id="bulkTypeCount"></strong> markerede registreringer. Timer genberegnes ud fra start/slut for hver linje.</p>
+    <div class="form-group">
+      <label>Ny arbejdstype</label>
+      <select id="bulkTypeSelect">
+        <option value="normal">Normalt arbejde</option>
+        <option value="ferie">Ferie</option>
+        <option value="feriefri">Feriefri</option>
+        <option value="friuden">Fri u. løn</option>
+        <option value="fravoer">Fravær</option>
+      </select>
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:12px;color:#92400e;line-height:1.5">
+      ⚠️ Timer genberegnes automatisk ud fra registreret start- og sluttidspunkt, fratrukket evt. pause. Registreringer uden start/slut får 0 timer.
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeBulkType()">Annuller</button>
+      <button class="btn btn-primary" onclick="saveBulkType()">🔄 Skift type</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVISOR APP -->
+<div id="revisorApp" style="display:none;padding-bottom:20px">
+  <div class="topbar">
+    <div class="topbar-brand">📊 <span id="revisorCompanyName"></span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="revisor-badge">Revisor</span>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Log ud</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showRevisorTab('t-revisor-export',this)">📤 Eksport</button>
+  </div>
+  <div id="t-revisor-export" class="tab-content active">
+    <div class="revisor-info-bar">ℹ️ Revisor-adgang. Eksport kun – ingen ændringer kan foretages.</div>
+    <div class="card">
+      <div class="card-title">📊 Eksport af tidsregistreringer</div>
+      <div class="form-group"><label>Lønperiode</label><select id="revExpPeriod"></select></div>
+      <div class="form-group" style="margin-top:10px"><label>Medarbejder</label><select id="revExpEmp"><option value="">Alle aktive</option></select></div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Inkludér arkiverede medarbejdere</label>
+        <select id="revExpArchived">
+          <option value="no">Nej – kun aktive</option>
+          <option value="yes">Ja – inkludér stoppede medarbejdere</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Godkendelsesstatus</label>
+        <select id="revExpFilter">
+          <option value="approved">Kun godkendte</option>
+          <option value="all">Alle (godkendte + ikke-godkendte markeres)</option>
+          <option value="pending">Kun ikke-godkendte</option>
+        </select>
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:#f9fafb;border-radius:8px;font-size:12px;color:#6b7280;line-height:1.6">
+        ✅ Godkendte vises normalt · 😞 Ikke-godkendte markeres · ❌ Afviste markeres<br>
+        📦 Arkiverede medarbejdere markeres med [STOPPET dd.mm.åå]<br>
+        Eksport er ikke-destruktiv – ingen data ændres
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn btn-success" style="flex:1;width:auto;min-width:80px" onclick="revisorExportExcel()">📊 Excel</button>
+        <button class="btn btn-amber" style="flex:1;width:auto;min-width:80px" onclick="revisorExportCSV()">📋 CSV</button>
+        <button class="btn btn-purple" style="flex:1;width:auto;min-width:80px" onclick="revisorExportPDF()">📄 PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
 <div id="addEmpModal" class="modal-overlay" style="display:none">
   <div class="modal">
     <h3>Tilføj medarbejder</h3>
@@ -246,8 +460,16 @@ tr:last-child td{border-bottom:none}
     <div class="form-group" style="margin-top:10px"><label>Fulde navn</label><input type="text" id="newName" placeholder="Fornavn Efternavn"></div>
     <div class="form-group" style="margin-top:10px"><label>Brugernavn</label><input type="text" id="newUser" placeholder="fornavn.efternavn" autocapitalize="none" autocorrect="off"></div>
     <div class="form-group" style="margin-top:10px"><label>Adgangskode</label><input type="password" id="newPass"></div>
-    <div class="form-group" style="margin-top:10px"><label>Type</label>
+    <div class="form-group" style="margin-top:10px"><label>Ansaettelsesform</label>
       <select id="newType"><option value="deltid">Deltid</option><option value="fuldtid">Fuldtid</option></select>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label>Loentype</label>
+      <select id="newEmpRole">
+        <option value="chauffor">Chauffor (godstransport)</option>
+        <option value="gls">Chauffor (GLS)</option>
+        <option value="medhjaelper">Chaufformedhjaelper</option>
+        <option value="montering">Monteringsmedarbejder</option>
+      </select>
     </div>
     <div class="modal-btns">
       <button class="btn btn-outline" onclick="closeAddEmp()">Annuller</button>
@@ -261,13 +483,65 @@ tr:last-child td{border-bottom:none}
     <h3>✏️ Rediger medarbejder</h3>
     <div class="form-group"><label>Medarbejdernr.</label><input type="text" id="editEmpNo" inputmode="numeric"></div>
     <div class="form-group" style="margin-top:10px"><label>Fulde navn</label><input type="text" id="editEmpName"></div>
-    <div class="form-group" style="margin-top:10px"><label>Ny adgangskode (lad stå tom for at beholde)</label><input type="password" id="editEmpPass" placeholder="Uændret"></div>
-    <div class="form-group" style="margin-top:10px"><label>Type</label>
+    <div class="form-group" style="margin-top:10px"><label>Ny adgangskode (tom = uændret)</label><input type="password" id="editEmpPass" placeholder="Uændret"></div>
+    <div class="form-group" style="margin-top:10px"><label>Ansaettelsesform</label>
       <select id="editEmpType"><option value="deltid">Deltid</option><option value="fuldtid">Fuldtid</option></select>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label>Loentype</label>
+      <select id="editEmpRole">
+        <option value="chauffor">Chauffor (godstransport)</option>
+        <option value="gls">Chauffor (GLS)</option>
+        <option value="medhjaelper">Chaufformedhjaelper</option>
+        <option value="montering">Monteringsmedarbejder</option>
+      </select>
     </div>
     <div class="modal-btns">
       <button class="btn btn-outline" onclick="closeEditEmp()">Annuller</button>
       <button class="btn btn-primary" onclick="saveEditEmp()">Gem ændringer</button>
+    </div>
+  </div>
+</div>
+
+<!-- STOP MEDARBEJDER MODAL -->
+<div id="stopEmpModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>🚫 Stop medarbejder</h3>
+    <div class="alert alert-warn" style="margin-bottom:14px">
+      Medarbejderen flyttes til arkiv og kan ikke længere logge ind. Alle eksisterende login-filer invalideres. Historiske data bevares.
+    </div>
+    <p style="font-size:14px;margin-bottom:16px">Medarbejder: <strong id="stopEmpName"></strong></p>
+    <div class="form-group">
+      <label>Stoppdato</label>
+      <input type="date" id="stopEmpDate">
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label>Årsag (vises i arkiv)</label>
+      <select id="stopEmpReason">
+        <option value="Opsagt af medarbejder">Opsagt af medarbejder</option>
+        <option value="Opsagt af arbejdsgiver">Opsagt af arbejdsgiver</option>
+        <option value="Kontraktudløb">Kontraktudløb</option>
+        <option value="Pension">Pension</option>
+        <option value="Andet">Andet</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label>Note (valgfrit)</label>
+      <input type="text" id="stopEmpNote" placeholder="Eventuelt yderligere info">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeStopEmp()">Annuller</button>
+      <button class="btn btn-danger" onclick="confirmStopEmp()">🚫 Stop og arkivér</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARKIV DETALJER MODAL -->
+<div id="archiveDetailModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3 id="archiveDetailTitle">📦 Historik</h3>
+    <div id="archiveDetailContent"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeArchiveDetail()">Luk</button>
     </div>
   </div>
 </div>
@@ -295,9 +569,25 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<div id="addRevisorModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>📊 Opret revisor adgang</h3>
+    <div class="form-group"><label>Navn</label><input type="text" id="newRevName" placeholder="F.eks. Revisor Olsen"></div>
+    <div class="form-group" style="margin-top:10px"><label>Brugernavn</label><input type="text" id="newRevUser" placeholder="revisor.olsen" autocapitalize="none" autocorrect="off"></div>
+    <div class="form-group" style="margin-top:10px"><label>Adgangskode</label><input type="password" id="newRevPass"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeAddRevisor()">Annuller</button>
+      <button class="btn btn-primary" onclick="saveNewRevisor()">Opret</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════════════════════
 var firebaseConfig = {
   apiKey: "AIzaSyDJTXCyO-K8xOr9KzANf1HA7Zd4a-9nWMA",
   authDomain: "pakkepiloten-tid.firebaseapp.com",
@@ -314,176 +604,545 @@ var COMPANIES = {
   'SL001':{name:'Smart Line ApS',code:'SL001'},
   'TML001':{name:'TML A/S',code:'TML001'}
 };
-
-var ADMIN_CREDS = {
-  'PP001':{username:'admin',password:'admin123'},
-  'SL001':{username:'admin',password:'admin123'},
-  'TML001':{username:'admin',password:'admin123'}
+// SHA-256 via Web Crypto API - kodeord gemmes aldrig i klartekst
+function sha256(str){
+  var buf=new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256',buf).then(function(hash){
+    return '$sha256$'+Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  });
+}
+function isHashed(val){return val&&val.startsWith('$sha256$');}
+function verifyPassword(input,stored){
+  if(isHashed(stored)){return sha256(input).then(function(h){return h===stored;});}
+  return Promise.resolve(input===stored);
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,9);}
+function applyMinStartTime(startStr,companyCode){
+  if(companyCode!=='PP001')return startStr;
+  if(!startStr)return startStr;
+  return startStr<'05:30'?'05:30':startStr;
+}
+// Standard-koder (pre-hashed). SKIFT via Indstillinger > Skift kode ved deployment.
+// PP001: af76bd7b  |  SL001: 8fa1c0bd  |  TML001: a485951b
+var ADMIN_DEFAULTS={
+  'PP001':{username:'admin',password:'$sha256$5d861dfa90bfbb10a3525a2d788f61e08ef0bc82eee60cd28d147c2203da6d4e'},
+  'SL001':{username:'admin',password:'$sha256$af20f090d84323229015edb415aa10d28abb47ce72b32a427ab69925c9ee6fd1'},
+  'TML001':{username:'admin',password:'$sha256$10b47b3ac5ea3fd53fe68a8bd8ba28fe9881ef04c39547e1bbdb393e2749fedf'}
+};
+var OVENS_PRESETS = {
+  ka:{name:'KA/Krifa Transport',normalHours:7.4,dayStart:'05:00',dayEnd:'18:00',nightStart:'22:00',otLimit:3,info:'Normal tid: 05:00–18:00 · Aftentimer: 18:00–22:00 · Nattimer: 22:00–05:00 · OT: 1.-3. time / 4.+ time'},
+  dtl:{name:'DTL/3F Transport',normalHours:7.4,dayStart:'05:00',dayEnd:'18:00',nightStart:'23:00',otLimit:3,info:'Normal tid: 05:00–18:00 · Aftentimer: 18:00–23:00 · Nattimer: 23:00–05:00 · OT: 1.-3. time / 4.+ time'},
+  manuel:{name:'Manuel',normalHours:7.4,dayStart:'05:00',dayEnd:'18:00',nightStart:'22:00',otLimit:3,info:'Tilpas tidszoner og OT-grænse manuelt.'}
 };
 
-var currentCompany = null;
-var allEntries = [];
-var checkInStates = {};
-var liveTimer = null;
-var editTarget = null;
+// State
+var currentCompany=null,currentRole=null,currentRevisorUser=null;
+var allEntries=[],checkInStates={},archivedEmployees=[];
+var liveTimer=null,editTarget=null,editEmpTarget=null;
+var fixMissedData=null,importParsedData=null,selectedLoginRole=null;
+var stopEmpTarget=null;
 
-// Storage
+// ─── Storage ───
 function gs(){try{return JSON.parse(localStorage.getItem('tidsreg_employer')||'{}');}catch(e){return{};}}
 function ss(d){try{localStorage.setItem('tidsreg_employer',JSON.stringify(d));}catch(e){}}
 
-// Overenskomst presets
-var OVENS_PRESETS = {
-  ka: {
-    name:'KA/Krifa Transport',
-    normalHours:7.4, dayStart:'05:00', dayEnd:'18:00', nightStart:'22:00', otLimit:3,
-    info:'Normal tid: 05:00–18:00 (lokalaftale) · Aftentimer: 18:00–22:00 · Nattimer: 22:00–05:00 · OT: 1.-3. time / 4.+ time'
-  },
-  dtl: {
-    name:'DTL/3F Transport',
-    normalHours:7.4, dayStart:'05:00', dayEnd:'18:00', nightStart:'23:00', otLimit:3,
-    info:'Normal tid: 05:00–18:00 (lokalaftale) · Aftentimer: 18:00–23:00 · Nattimer: 23:00–05:00 · OT: 1.-3. time / 4.+ time'
-  },
-  manuel: {
-    name:'Manuel',
-    normalHours:7.4, dayStart:'05:00', dayEnd:'18:00', nightStart:'22:00', otLimit:3,
-    info:'Tilpas tidszoner og OT-grænse manuelt.'
-  }
-};
-
-function getSettings(){
-  var s=gs();var key='settings_'+(currentCompany?currentCompany.code:'');
-  if(!s[key]){
-    var defaultOvens=(currentCompany&&currentCompany.code==='TML001')?'dtl':'ka';
-    var preset=OVENS_PRESETS[defaultOvens];
-    s[key]=Object.assign({ovens:defaultOvens},preset);ss(s);
-  }
-  return s[key];
-}
-
-function onOvensChange(){
-  var val=document.getElementById('setOvens').value;
-  var preset=OVENS_PRESETS[val];if(!preset)return;
-  document.getElementById('setNorm').value=preset.normalHours;
-  document.getElementById('setDayStart').value=preset.dayStart;
-  document.getElementById('setDayEnd').value=preset.dayEnd;
-  document.getElementById('setNightStart').value=preset.nightStart;
-  document.getElementById('setOTLimit').value=preset.otLimit;
-  var info=document.getElementById('ovensInfo');
-  info.style.background='#eff4ff';info.style.border='1px solid #bfdbfe';info.style.color='#2563eb';
-  info.textContent=preset.info;
-}
-
-// Firebase collections per virksomhed
+// ─── Collections ───
 function entriesCol(){return db.collection('companies').doc(currentCompany.code).collection('entries');}
 function checkinCol(){return db.collection('companies').doc(currentCompany.code).collection('checkin');}
 function employeesCol(){return db.collection('companies').doc(currentCompany.code).collection('employees');}
+function revisorsCol(){return db.collection('companies').doc(currentCompany.code).collection('revisors');}
+function archivedCol(){return db.collection('companies').doc(currentCompany.code).collection('archived_employees');}
 
-// ── Virksomhedsvalg ───────────────────────────────────────
-var selectedCompanyCode = null;
+// ═══════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════
+function selectRole(role,el){
+  selectedLoginRole=role;
+  var btns=document.querySelectorAll('.role-btn');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('selected');
+  el.classList.add('selected');
+  setTimeout(function(){
+    document.getElementById('step0').style.display='none';
+    document.getElementById('step1').style.display='block';
+    var box=document.getElementById('companyInfoBox');
+    if(role==='revisor'){box.style.background='#fffbeb';box.style.border='1px solid #fcd34d';document.getElementById('selectedCompanyName').style.color='#d97706';}
+    else{box.style.background='#eff4ff';box.style.border='1px solid #bfdbfe';document.getElementById('selectedCompanyName').style.color='#2563eb';}
+  },120);
+}
+function backToStep0(){document.getElementById('step0').style.display='block';document.getElementById('step1').style.display='none';document.getElementById('companyCodeInput').value='';document.getElementById('companyError').style.display='none';}
 function goToLogin(){
-  var code = document.getElementById('companyCodeInput').value.trim().toUpperCase();
-  var err = document.getElementById('companyError');
+  var code=document.getElementById('companyCodeInput').value.trim().toUpperCase();
+  var err=document.getElementById('companyError');
   if(!code){err.style.display='';err.textContent='Indtast en virksomhedskode.';return;}
-  var company = COMPANIES[code];
-  if(!company){err.style.display='';err.textContent='Ukendt virksomhedskode. Prøv igen.';return;}
-  err.style.display='none';
-  selectedCompanyCode=code;
-  currentCompany=company;
+  var company=COMPANIES[code];
+  if(!company){err.style.display='';err.textContent='Ukendt virksomhedskode.';return;}
+  err.style.display='none';currentCompany=company;
   document.getElementById('selectedCompanyName').textContent=company.name;
-  document.getElementById('selectedCompanyCode').textContent='Kode: '+company.code;
-  document.getElementById('step1').style.display='none';
-  document.getElementById('step2').style.display='block';
+  document.getElementById('selectedCompanyCode').textContent='Kode: '+company.code+(selectedLoginRole==='revisor'?' · Revisor-adgang':'');
+  document.getElementById('step1').style.display='none';document.getElementById('step2').style.display='block';
+  document.getElementById('loginUser').placeholder=selectedLoginRole==='revisor'?'revisor.brugernavn':'admin';
 }
 function backToStep1(){
-  currentCompany=null;selectedCompanyCode=null;
-  document.getElementById('step1').style.display='block';
-  document.getElementById('step2').style.display='none';
-  document.getElementById('companyCodeInput').value='';
-  document.getElementById('loginUser').value='';
-  document.getElementById('loginPass').value='';
-  document.getElementById('loginError').style.display='none';
-  document.getElementById('companyError').style.display='none';
+  currentCompany=null;
+  document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';
+  document.getElementById('companyCodeInput').value='';document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
+  document.getElementById('loginError').style.display='none';document.getElementById('companyError').style.display='none';
 }
 document.getElementById('companyCodeInput').addEventListener('keydown',function(e){if(e.key==='Enter')goToLogin();});
+document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
-// ── Login ─────────────────────────────────────────────────
 function doLogin(){
   var u=document.getElementById('loginUser').value.trim();
   var p=document.getElementById('loginPass').value;
-  if(!currentCompany){return;}
-  var creds=ADMIN_CREDS[currentCompany.code];
-  // Tjek for custom kode i storage
-  var s=gs();var customKey='admin_'+currentCompany.code;
-  if(s[customKey])creds=s[customKey];
-  if(u!==creds.username||p!==creds.password){
-    var el=document.getElementById('loginError');el.style.display='';el.textContent='Forkert brugernavn eller adgangskode.';return;
+  var errEl=document.getElementById('loginError');
+  if(!currentCompany)return;
+  if(selectedLoginRole==='admin'){
+    var s=gs();var key='admin_'+currentCompany.code;
+    var creds=s[key]||ADMIN_DEFAULTS[currentCompany.code];
+    errEl.style.display='';errEl.textContent='Verificerer...';
+    verifyPassword(p,creds.password).then(function(ok){
+      if(u!==creds.username||!ok){errEl.style.display='';errEl.textContent='Forkert brugernavn eller adgangskode.';return;}
+      if(!isHashed(creds.password)){sha256(p).then(function(h){var s3=gs();s3[key]={username:u,password:h};ss(s3);});}
+      var s2=gs();s2.session={companyCode:currentCompany.code,role:'admin',loggedIn:true};ss(s2);
+      errEl.style.display='none';startAdminSession();
+    });
+  } else {
+    errEl.style.display='';errEl.textContent='Verificerer...';
+    revisorsCol().doc(u).get().then(function(doc){
+      if(doc.exists){
+        var rev=doc.data();
+        verifyPassword(p,rev.password).then(function(ok){
+          if(!ok){errEl.style.display='';errEl.textContent='Forkert adgangskode.';return;}
+          currentRevisorUser=rev;
+          var s2=gs();s2.session={companyCode:currentCompany.code,role:'revisor',username:u,loggedIn:true};ss(s2);
+          errEl.style.display='none';startRevisorSession();
+        });
+      } else {errEl.style.display='';errEl.textContent='Revisor-brugernavn ikke fundet.';}
+    }).catch(function(){errEl.style.display='';errEl.textContent='Netvaerksfejl – prov igen.';});
   }
-  var s2=gs();s2.session={companyCode:currentCompany.code,loggedIn:true};ss(s2);
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('companyName').textContent=currentCompany.name;
-  initApp();
 }
+
 function doLogout(){
   if(liveTimer)clearInterval(liveTimer);
-  currentCompany=null;selectedCompanyCode=null;allEntries=[];checkInStates={};
+  currentCompany=null;currentRole=null;currentRevisorUser=null;allEntries=[];checkInStates={};archivedEmployees=[];
   var s=gs();s.session=null;ss(s);
   document.getElementById('app').style.display='none';
+  document.getElementById('revisorApp').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('step1').style.display='block';
+  document.getElementById('step0').style.display='block';
+  document.getElementById('step1').style.display='none';
   document.getElementById('step2').style.display='none';
-  document.getElementById('companyCodeInput').value='';
-  document.getElementById('loginUser').value='';
-  document.getElementById('loginPass').value='';
+  document.getElementById('companyCodeInput').value='';document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
+  selectedLoginRole=null;
+  document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('selected');});
 }
-document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
 window.addEventListener('load',function(){
   var s=gs();
   if(s.session&&s.session.loggedIn&&s.session.companyCode){
-    var company=COMPANIES[s.session.companyCode];
-    if(!company)return;
+    var company=COMPANIES[s.session.companyCode];if(!company)return;
     currentCompany=company;
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('companyName').textContent=company.name;
-    initApp();
+    if(s.session.role==='revisor'){
+      revisorsCol().doc(s.session.username).get().then(function(doc){
+        if(doc.exists){currentRevisorUser=doc.data();startRevisorSession();}
+      }).catch(function(){});
+    } else {startAdminSession();}
   }
 });
 
-function initApp(){
+// ═══════════════════════════════════════════════════════════
+// SESSIONS
+// ═══════════════════════════════════════════════════════════
+function startAdminSession(){
+  currentRole='admin';
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('companyName').textContent=currentCompany.name;
   populateAllPeriods();loadSettings();subscribeAll();
 }
 
-// ── Firebase subscriptions ────────────────────────────────
+function startRevisorSession(){
+  currentRole='revisor';
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('revisorApp').style.display='block';
+  document.getElementById('revisorCompanyName').textContent=currentCompany.name;
+  entriesCol().onSnapshot(function(snap){
+    allEntries=[];snap.forEach(function(d){allEntries.push(d.data());});
+    populateRevisorPeriods();
+  });
+  // Load active + archived for revisor selectors
+  loadRevisorEmpSelectors();
+}
+
+function loadRevisorEmpSelectors(){
+  Promise.all([
+    employeesCol().get(),
+    archivedCol().get()
+  ]).then(function(results){
+    var emps=[];
+    results[0].forEach(function(d){emps.push(d.data());});
+    var archs=[];
+    results[1].forEach(function(d){archs.push(d.data());});
+    emps.sort(function(a,b){return(a.empNo||'').localeCompare(b.empNo||'');});
+    archs.sort(function(a,b){return(a.empNo||'').localeCompare(b.empNo||'');});
+    var html='<option value="">Alle aktive</option>'+
+      emps.map(function(e){return'<option value="'+e.username+'">'+e.name+'</option>';}).join('')+
+      (archs.length?'<optgroup label="─ Arkiverede ─">'+archs.map(function(e){return'<option value="'+e.username+'" data-archived="1">'+e.name+' [STOPPET]</option>';}).join('')+'</optgroup>':'');
+    var el=document.getElementById('revExpEmp');if(el)el.innerHTML=html;
+  }).catch(function(){});
+}
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+function getSettings(){
+  var s=gs();var key='settings_'+(currentCompany?currentCompany.code:'');
+  if(!s[key]){var def=(currentCompany&&currentCompany.code==='TML001')?'dtl':'ka';var p=OVENS_PRESETS[def];s[key]=Object.assign({ovens:def},p);ss(s);}
+  return s[key];
+}
+function onOvensChange(){
+  var val=document.getElementById('setOvens').value;var p=OVENS_PRESETS[val];if(!p)return;
+  document.getElementById('setNorm').value=p.normalHours;document.getElementById('setDayStart').value=p.dayStart;
+  document.getElementById('setDayEnd').value=p.dayEnd;document.getElementById('setNightStart').value=p.nightStart;
+  document.getElementById('setOTLimit').value=p.otLimit;
+  var info=document.getElementById('ovensInfo');info.style.background='#eff4ff';info.style.border='1px solid #bfdbfe';info.style.color='#2563eb';info.textContent=p.info;
+}
+function loadSettings(){
+  var s=getSettings();
+  document.getElementById('setOvens').value=s.ovens||'ka';
+  document.getElementById('setPeriodDay').value=String(s.periodDay||20);
+  document.getElementById('setNorm').value=s.normalHours||7.4;
+  document.getElementById('setDayStart').value=s.dayStart||'05:00';document.getElementById('setDayEnd').value=s.dayEnd||'18:00';
+  document.getElementById('setNightStart').value=s.nightStart||'22:00';document.getElementById('setOTLimit').value=s.otLimit||3;
+  var p=OVENS_PRESETS[s.ovens||'ka'];
+  if(p){var info=document.getElementById('ovensInfo');info.style.background='#eff4ff';info.style.border='1px solid #bfdbfe';info.style.color='#2563eb';info.textContent=p.info;}
+  loadRevisors();
+  loadRecoveryEmail();
+}
+function saveSettings(){
+  var periodDay=parseInt(document.getElementById('setPeriodDay').value)||20;
+  var s=gs();s['settings_'+currentCompany.code]={ovens:document.getElementById('setOvens').value,periodDay:periodDay,normalHours:parseFloat(document.getElementById('setNorm').value)||7.4,dayStart:document.getElementById('setDayStart').value||'05:00',dayEnd:document.getElementById('setDayEnd').value||'18:00',nightStart:document.getElementById('setNightStart').value||'22:00',otLimit:parseFloat(document.getElementById('setOTLimit').value)||3};
+  ss(s);
+  db.collection('companies').doc(currentCompany.code).collection('config').doc('settings').set({periodDay:periodDay}).catch(function(){});
+  showToast('⚙️ Indstillinger gemt');
+}
+function changePass(){
+  var curr=document.getElementById('setCurr').value;var newp=document.getElementById('setNew').value;
+  var s=gs();var key='admin_'+currentCompany.code;
+  var creds=s[key]||ADMIN_DEFAULTS[currentCompany.code];
+  if(newp.length<6){showToast('⚠️ Kode skal vaere mindst 6 tegn');return;}
+  verifyPassword(curr,creds.password).then(function(ok){
+    if(!ok){showToast('⚠️ Forkert nuvaerende kode');return;}
+    sha256(newp).then(function(h){
+      var s2=gs();s2[key]={username:creds.username,password:h};ss(s2);
+      showToast('🔐 Kode aendret');
+      document.getElementById('setCurr').value='';document.getElementById('setNew').value='';
+    });
+  });
+}
+
+function cleanAutoNotes(){
+  var AUTO_NOTES=['Importeret fra Excel','Rettet af admin: glemt udtjekning','Oprettet af admin'];
+  var resultEl=document.getElementById('cleanNotesResult');
+  resultEl.style.display='block';
+  resultEl.innerHTML='<div style="padding:10px 12px;background:#f9fafb;border-radius:8px;font-size:13px;color:#6b7280">🔍 Søger...</div>';
+  entriesCol().get().then(function(snap){
+    var toClean=[];
+    snap.forEach(function(doc){
+      var d=doc.data();
+      if(d.note&&AUTO_NOTES.indexOf(d.note.trim())>=0){toClean.push(doc.id);}
+    });
+    if(!toClean.length){
+      resultEl.innerHTML='<div style="padding:10px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:13px;color:#166534">✅ Ingen auto-noter fundet — alt er allerede rent.</div>';
+      return;
+    }
+    resultEl.innerHTML='<div style="padding:10px 12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:#92400e">⏳ Rydder '+toClean.length+' noter...</div>';
+    var BATCH_SIZE=500;
+    function processBatch(index){
+      if(index>=toClean.length){
+        resultEl.innerHTML='<div style="padding:10px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:13px;color:#166534">✅ '+toClean.length+' noter ryddet.</div>';
+        showToast('🧹 '+toClean.length+' auto-noter ryddet');
+        return;
+      }
+      var batch=db.batch();
+      var end=Math.min(index+BATCH_SIZE,toClean.length);
+      for(var i=index;i<end;i++){batch.update(entriesCol().doc(toClean[i]),{note:''});}
+      batch.commit().then(function(){processBatch(end);}).catch(function(e){
+        resultEl.innerHTML='<div style="padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#991b1b">⚠️ Fejl: '+e.message+'</div>';
+      });
+    }
+    processBatch(0);
+  }).catch(function(e){
+    resultEl.innerHTML='<div style="padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#991b1b">⚠️ Fejl: '+e.message+'</div>';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// REVISOR MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function loadRevisors(){
+  revisorsCol().get().then(function(snap){
+    var revs=[];snap.forEach(function(d){revs.push(d.data());});
+    var el=document.getElementById('revisorList');
+    if(!revs.length){el.innerHTML='<p style="color:#9ca3af;font-size:13px">Ingen revisor adgange oprettet endnu.</p>';return;}
+    el.innerHTML=revs.map(function(r){return'<div class="revisor-list-item"><div><div class="revisor-list-name">'+r.name+'</div><div class="revisor-list-user">Brugernavn: <strong>'+r.username+'</strong></div></div><button class="btn btn-danger btn-sm" onclick="removeRevisor(\''+r.username+'\')">Fjern adgang</button></div>';}).join('');
+  }).catch(function(){});
+}
+function openAddRevisor(){document.getElementById('addRevisorModal').style.display='flex';}
+function closeAddRevisor(){document.getElementById('addRevisorModal').style.display='none';}
+function saveNewRevisor(){
+  var name=document.getElementById('newRevName').value.trim();var user=document.getElementById('newRevUser').value.trim();var pass=document.getElementById('newRevPass').value;
+  if(!name||!user||!pass){showToast('⚠️ Udfyld alle felter');return;}
+  if(pass.length<6){showToast('⚠️ Adgangskode skal vaere mindst 6 tegn');return;}
+  sha256(pass).then(function(hashedPass){
+    revisorsCol().doc(user).set({name:name,username:user,password:hashedPass,createdAt:new Date().toISOString()}).then(function(){showToast('✅ Revisor oprettet: '+name);closeAddRevisor();document.getElementById('newRevName').value='';document.getElementById('newRevUser').value='';document.getElementById('newRevPass').value='';loadRevisors();}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  });
+}
+function removeRevisor(username){
+  if(!confirm('Fjern revisor adgang for "'+username+'"?'))return;
+  revisorsCol().doc(username).delete().then(function(){showToast('🗑 Revisor adgang fjernet');loadRevisors();}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE SUBSCRIPTIONS
+// ═══════════════════════════════════════════════════════════
 function subscribeAll(){
   entriesCol().onSnapshot(function(snap){
     allEntries=[];snap.forEach(function(d){allEntries.push(d.data());});
     populateAllPeriods();renderLiveDashboard();
-    var active=document.querySelector('.tab-content.active');
+    var active=document.querySelector('#app .tab-content.active');
     if(active){if(active.id==='t-approve')renderApprove();if(active.id==='t-period')renderPeriod();}
-  },function(err){console.error(err);});
-
+  });
   checkinCol().onSnapshot(function(snap){
     checkInStates={};snap.forEach(function(d){checkInStates[d.id]=d.data();});
     renderLiveDashboard();
-  },function(err){console.error(err);});
-
+  });
   employeesCol().onSnapshot(function(snap){
     var emps=[];snap.forEach(function(d){emps.push(d.data());});
     emps.sort(function(a,b){return(a.empNo||'').localeCompare(b.empNo||'');});
     var s=gs();s['employees_'+currentCompany.code]=emps;ss(s);
     renderEmployees();populateEmpSelectors();renderLiveDashboard();
-  },function(err){console.error(err);});
-
+  });
+  archivedCol().onSnapshot(function(snap){
+    archivedEmployees=[];snap.forEach(function(d){archivedEmployees.push(d.data());});
+    renderArchive();populateEmpSelectors();
+  });
   liveTimer=setInterval(updateElapsedCards,1000);
 }
 
-function getEmployees(){
-  var s=gs();return s['employees_'+currentCompany.code]||[];
+function getEmployees(){var s=gs();return s['employees_'+currentCompany.code]||[];}
+
+// ═══════════════════════════════════════════════════════════
+// PERIODS
+// ═══════════════════════════════════════════════════════════
+function getPeriodDay(){var s=getSettings();return s.periodDay||20;}
+function dateToPeriod(ds){var startDay=getPeriodDay();var d=new Date(ds);var day=d.getDate(),mo=d.getMonth(),yr=d.getFullYear();if(day>=startDay)return yr+'-'+pad(mo+1);if(mo===0)return(yr-1)+'-12';return yr+'-'+pad(mo);}
+function periodDates(p){var startDay=getPeriodDay();var endDay=startDay-1;var parts=p.split('-');var y=parseInt(parts[0]),m=parseInt(parts[1]);return{start:new Date(y,m-1,startDay),end:m===12?new Date(y+1,0,endDay):new Date(y,m,endDay)};}
+function periodLabel(p){var pd=periodDates(p);var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];return pd.start.getDate()+'. '+mo[pd.start.getMonth()]+' – '+pd.end.getDate()+'. '+mo[pd.end.getMonth()]+' '+pd.end.getFullYear();}
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function getAllPeriods(){var set={};set[dateToPeriod(todayStr())]=true;for(var i=0;i<allEntries.length;i++)set[dateToPeriod(allEntries[i].date)]=true;return Object.keys(set).sort().reverse();}
+
+function populateAllPeriods(){
+  var periods=getAllPeriods();var ids=['appPeriod','perPeriod','expPeriod'];
+  for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(!el)continue;var v=el.value;el.innerHTML=periods.map(function(p){return'<option value="'+p+'">'+periodLabel(p)+'</option>';}).join('');if(v)el.value=v;}
 }
 
-// ── Live Dashboard ────────────────────────────────────────
+function populateRevisorPeriods(){
+  var periods=getAllPeriods();var el=document.getElementById('revExpPeriod');if(!el)return;
+  var v=el.value;el.innerHTML=periods.map(function(p){return'<option value="'+p+'">'+periodLabel(p)+'</option>';}).join('');if(v)el.value=v;
+}
+
+function populateEmpSelectors(){
+  var emps=getEmployees();
+  var activeOpts='<option value="">Alle aktive</option>'+emps.map(function(e){return'<option value="'+e.username+'">'+e.name+'</option>';}).join('');
+  var archOpts=archivedEmployees.length?'<optgroup label="─ Arkiverede ─">'+archivedEmployees.map(function(e){return'<option value="'+e.username+'" data-archived="1">'+e.name+' [STOPPET]</option>';}).join('')+'</optgroup>':'';
+  ['appEmp','perEmp'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=activeOpts;});
+  var expEl=document.getElementById('expEmp');if(expEl)expEl.innerHTML=activeOpts+archOpts;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STOP / ARCHIVE EMPLOYEE
+// ═══════════════════════════════════════════════════════════
+function openStopEmp(username){
+  var emps=getEmployees();var emp=null;
+  for(var i=0;i<emps.length;i++){if(emps[i].username===username){emp=emps[i];break;}}
+  if(!emp)return;
+  stopEmpTarget=emp;
+  document.getElementById('stopEmpName').textContent=emp.name;
+  document.getElementById('stopEmpDate').value=todayStr();
+  document.getElementById('stopEmpReason').selectedIndex=0;
+  document.getElementById('stopEmpNote').value='';
+  document.getElementById('stopEmpModal').style.display='flex';
+}
+function closeStopEmp(){document.getElementById('stopEmpModal').style.display='none';stopEmpTarget=null;}
+
+function confirmStopEmp(){
+  if(!stopEmpTarget)return;
+  var emp=stopEmpTarget;
+  var stopDate=document.getElementById('stopEmpDate').value;
+  var reason=document.getElementById('stopEmpReason').value;
+  var note=document.getElementById('stopEmpNote').value.trim();
+  if(!stopDate){showToast('⚠️ Vælg en stoppdato');return;}
+
+  var archiveData=Object.assign({},emp,{
+    active:false,
+    archived:true,
+    stopDate:stopDate,
+    stopReason:reason,
+    stopNote:note,
+    archivedAt:new Date().toISOString(),
+    // Invalidate all login files by rotating the password token
+    loginInvalidatedAt:new Date().toISOString()
+  });
+
+  var batch=db.batch();
+  // Write to archived_employees
+  batch.set(archivedCol().doc(emp.username), archiveData);
+  // Remove from active employees
+  batch.delete(employeesCol().doc(emp.username));
+  // Clear any active check-in
+  batch.set(checkinCol().doc(emp.username),{username:emp.username,checkedIn:false,archivedAt:new Date().toISOString()});
+
+  batch.commit().then(function(){
+    showToast('📦 '+emp.name+' er arkiveret');
+    closeStopEmp();
+  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESTORE FROM ARCHIVE
+// ═══════════════════════════════════════════════════════════
+function restoreEmployee(username){
+  var emp=null;for(var i=0;i<archivedEmployees.length;i++){if(archivedEmployees[i].username===username){emp=archivedEmployees[i];break;}}
+  if(!emp)return;
+  if(!confirm('Genopret '+emp.name+' som aktiv medarbejder?\n\nNB: Personen skal have en ny login-fil – den gamle er invalideret.'))return;
+
+  var restoredData=Object.assign({},emp);
+  delete restoredData.archived;delete restoredData.stopDate;delete restoredData.stopReason;
+  delete restoredData.stopNote;delete restoredData.archivedAt;delete restoredData.loginInvalidatedAt;
+  restoredData.active=true;restoredData.restoredAt=new Date().toISOString();
+
+  var batch=db.batch();
+  batch.set(employeesCol().doc(username),restoredData);
+  batch.delete(archivedCol().doc(username));
+  batch.commit().then(function(){
+    showToast('✅ '+emp.name+' genoprettet – udsted ny login-fil');
+  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+
+// ═══════════════════════════════════════════════════════════
+// ARCHIVE TAB RENDER
+// ═══════════════════════════════════════════════════════════
+function renderArchive(){
+  var el=document.getElementById('archiveList');if(!el)return;
+  if(!archivedEmployees.length){
+    el.innerHTML='<div class="alert alert-info" style="margin-top:0">Ingen arkiverede medarbejdere.</div>';return;
+  }
+  var sorted=archivedEmployees.slice().sort(function(a,b){return(b.stopDate||'').localeCompare(a.stopDate||'');});
+  el.innerHTML=sorted.map(function(emp){
+    var stopDt=emp.stopDate?formatDate(emp.stopDate):'Ukendt';
+    var hiredDt=emp.hiredDate?formatDate(emp.hiredDate):'–';
+    var entries=allEntries.filter(function(e){return e.username===emp.username;});
+    var totalH=entries.reduce(function(s,e){return s+e.hours;},0);
+    return '<div class="archive-card">'+
+      '<div class="archive-card-header">'+
+        '<div>'+
+          '<div class="archive-name">'+emp.name+'</div>'+
+          '<div class="archive-meta">'+
+            'Nr: '+(emp.empNo||'–')+' · '+(emp.type==='deltid'?'Deltid':'Fuldtid')+'<br>'+
+            'Brugernavn: <strong>'+emp.username+'</strong><br>'+
+            'Stopårsag: '+emp.stopReason+(emp.stopNote?' ('+emp.stopNote+')':'')+'<br>'+
+            'Total registreret: '+totalH.toFixed(1)+' timer ('+entries.length+' poster)'+
+          '</div>'+
+          '<div class="archive-dates">📅 Stoppet: '+stopDt+'</div>'+
+        '</div>'+
+        '<span class="tag tag-archived">Arkiveret</span>'+
+      '</div>'+
+      '<div class="archive-actions">'+
+        '<button class="btn btn-gray btn-sm" onclick="showArchiveHistory(\''+emp.username+'\')">📋 Se historik</button>'+
+        '<button class="btn btn-amber btn-sm" onclick="exportArchiveExcel(\''+emp.username+'\')">📊 Excel</button>'+
+        '<button class="btn btn-success btn-sm" onclick="restoreEmployee(\''+emp.username+'\')">↩️ Genopret</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="permanentDeleteEmployee(\''+emp.username+'\')">🗑 Slet permanent</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function showArchiveHistory(username){
+  var emp=null;for(var i=0;i<archivedEmployees.length;i++){if(archivedEmployees[i].username===username){emp=archivedEmployees[i];break;}}
+  if(!emp)return;
+  var entries=allEntries.filter(function(e){return e.username===username;}).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+  var typeL={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
+  var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
+  var html='<div class="alert alert-warn" style="margin-bottom:12px">Stoppet: '+formatDate(emp.stopDate||'')+'  ·  Årsag: '+emp.stopReason+'</div>';
+  if(!entries.length){html+='<p style="color:#9ca3af;font-size:13px">Ingen registreringer fundet.</p>';}
+  else{
+    html+='<div class="table-wrap"><table><thead><tr><th>Dato</th><th>Dag</th><th>Start</th><th>Slut</th><th>Timer</th><th>Type</th><th>Status</th></tr></thead><tbody>';
+    for(var i=0;i<entries.length;i++){
+      var e=entries[i];var d=new Date(e.date);
+      var stat=e.approved?'✅':e.rejected?'❌':'😞';
+      html+='<tr class="'+(e.approved?'':e.rejected?'row-rejected':'row-pending')+'"><td>'+e.date+'</td><td>'+days[d.getDay()]+'</td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td><td><b>'+e.hours.toFixed(2)+'</b></td><td>'+(typeL[e.type]||e.type)+'</td><td>'+stat+'</td></tr>';
+    }
+    html+='</tbody></table></div>';
+  }
+  document.getElementById('archiveDetailTitle').textContent='📦 '+emp.name+' – Historik';
+  document.getElementById('archiveDetailContent').innerHTML=html;
+  document.getElementById('archiveDetailModal').style.display='flex';
+}
+function closeArchiveDetail(){document.getElementById('archiveDetailModal').style.display='none';}
+
+function exportArchiveExcel(username){
+  var emp=null;for(var i=0;i<archivedEmployees.length;i++){if(archivedEmployees[i].username===username){emp=archivedEmployees[i];break;}}
+  if(!emp)return;
+  var entries=allEntries.filter(function(e){return e.username===username;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  var settings=getSettings();var wb=XLSX.utils.book_new();
+  var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
+  var typeL={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
+  var sheetData=[
+    [emp.name+' [STOPPET '+formatDate(emp.stopDate||'')+']'],
+    ['Stopårsag: '+emp.stopReason],
+    ['Virksomhed: '+currentCompany.name],
+    ['Eksporteret: '+new Date().toLocaleString('da-DK')],
+    [],
+    ['Dato','Dag','Start','Slut','Timer','Type','Normal t','Aften t','Nat t','Lørdag t','Søn t','OT 1-3 t','OT 4+ t','Status','Note']
+  ];
+  for(var i=0;i<entries.length;i++){
+    var e=entries[i];var d=new Date(e.date);var tl=calcTillaeg(e,settings,emp.empRole||'chauffor');
+    sheetData.push([e.date,days[d.getDay()],e.start||'',e.end||'',e.hours.toFixed(2),typeL[e.type]||e.type,
+      tl.normal.toFixed(2),tl.evening.toFixed(2),tl.night.toFixed(2),tl.saturday.toFixed(2),tl.sunday.toFixed(2),
+      tl.ot1.toFixed(2),tl.ot2.toFixed(2),entryStatusLabel(e),e.note||'']);
+  }
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sheetData),emp.name.slice(0,31));
+  XLSX.writeFile(wb,'arkiv_'+emp.username+'_'+currentCompany.code+'.xlsx');
+  showToast('📊 Arkiv eksporteret for '+emp.name);
+}
+
+function permanentDeleteEmployee(username){
+  var emp=null;for(var i=0;i<archivedEmployees.length;i++){if(archivedEmployees[i].username===username){emp=archivedEmployees[i];break;}}
+  if(!emp)return;
+  var entryCount=allEntries.filter(function(e){return e.username===username;}).length;
+  if(!confirm('ADVARSEL: Slet '+emp.name+' permanent?\n\nDette sletter:\n  • Medarbejderkortet fra arkiv\n  • '+entryCount+' tidsregistrering'+(entryCount!==1?'er':'')+' (GDPR)\n  • Check-in data\n\nDenne handling kan ikke fortrydes.'))return;
+  var entriesToDelete=allEntries.filter(function(e){return e.username===username;});
+  function deleteBatch(entries,idx){
+    if(idx>=entries.length){
+      var b2=db.batch();
+      b2.delete(archivedCol().doc(username));
+      b2.delete(checkinCol().doc(username));
+      b2.commit().then(function(){showToast('🗑 '+emp.name+' slettet permanent (inkl. '+entriesToDelete.length+' registreringer)');}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+      return;
+    }
+    var b=db.batch();var end=Math.min(idx+500,entries.length);
+    for(var i=idx;i<end;i++)b.delete(entriesCol().doc(String(entries[i].id)));
+    b.commit().then(function(){deleteBatch(entries,end);}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  }
+  deleteBatch(entriesToDelete,0);
+}
+
+function formatDate(ds){if(!ds)return'–';var p=ds.split('-');if(p.length!==3)return ds;return p[2]+'.'+p[1]+'.'+p[0];}
+
+// ═══════════════════════════════════════════════════════════
+// LIVE DASHBOARD
+// ═══════════════════════════════════════════════════════════
 function renderLiveDashboard(){
   var emps=getEmployees();var now=new Date();
   var today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
@@ -501,26 +1160,18 @@ function renderLiveDashboard(){
     var statusHtml='';
     if(isMissed){
       var missedDate=new Date(cs.startTime);
-      var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
-      var missedLabel=missedDate.getDate()+'. '+mo[missedDate.getMonth()];
+      var mo2=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+      var missedLabel=missedDate.getDate()+'. '+mo2[missedDate.getMonth()];
       var missedDateStr=missedDate.getFullYear()+'-'+pad(missedDate.getMonth()+1)+'-'+pad(missedDate.getDate());
       var missedStartStr=pad(missedDate.getHours())+':'+pad(missedDate.getMinutes());
-      var missedType=cs.dayType||'normal';
       statusHtml='<div class="status-missed">⚠️ Glemt udtjekning '+missedLabel+'</div>'+
         '<button class="btn btn-danger btn-sm" style="margin-top:6px;width:auto" '+
-        'data-username="'+emp.username+'" '+
-        'data-starttime="'+cs.startTime+'" '+
-        'data-date="'+missedDateStr+'" '+
-        'data-type="'+missedType+'" '+
-        'data-start="'+missedStartStr+'" '+
-        'data-name="'+emp.name+'" '+
-        'onclick="adminFixMissedBtn(this)">🔧 Ret udtjekning</button>';
-    }
-    else if(isIn){
-      var diff=now.getTime()-cs.startTime;
-      var eh=Math.floor(diff/3600000),em=Math.floor((diff%3600000)/60000),es2=Math.floor((diff%60000)/1000);
-      statusHtml='<div class="status-in">● Tjekket ind '+(cs.start||'')+'</div><div class="live-elapsed" data-start="'+cs.startTime+'">'+pad(eh)+'t '+pad(em)+'m '+pad(es2)+'s</div>';
-    }else{statusHtml='<div class="status-out">○ Ikke tjekket ind</div>';}
+        'data-username="'+emp.username+'" data-starttime="'+cs.startTime+'" data-date="'+missedDateStr+'" data-type="'+(cs.dayType||'normal')+'" data-start="'+missedStartStr+'" data-name="'+emp.name+'" onclick="adminFixMissedBtn(this)">🔧 Ret udtjekning</button>';
+    } else if(isIn){
+      var elapsedH=Math.round(((Date.now()-cs.startTime)/3600000)*100)/100;
+      var longShift=elapsedH>6?'<div style="font-size:11px;color:#f59e0b;margin-top:3px">⚠️ '+elapsedH.toFixed(1)+'t – husk pause ved udtjekning</div>':'';
+      statusHtml='<div class="status-in">● Tjekket ind '+(cs.start||'')+'</div><div class="live-elapsed" data-start="'+cs.startTime+'">–</div>'+longShift;
+    } else {statusHtml='<div class="status-out">○ Ikke tjekket ind</div>';}
     cardsHtml+='<div class="'+cardClass+'"><div style="display:flex;justify-content:space-between;align-items:center"><div class="live-name">'+emp.name+'</div><span class="tag tag-'+emp.type+'">'+(emp.type==='deltid'?'Deltid':'Fuldtid')+'</span></div><div style="margin-top:6px">'+statusHtml+'</div></div>';
   }
   document.getElementById('liveStats').innerHTML=
@@ -528,12 +1179,10 @@ function renderLiveDashboard(){
     '<div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-val">'+pendingTotal+'</div><div class="stat-lbl">Afventer godkendelse</div></div>'+
     '<div class="stat-card"><div class="stat-icon">⏱</div><div class="stat-val">'+todayH.toFixed(1)+'t</div><div class="stat-lbl">Arbejdstimer i dag</div></div>'+
     '<div class="stat-card"><div class="stat-icon">'+(missedCount>0?'⚠️':'✅')+'</div><div class="stat-val">'+missedCount+'</div><div class="stat-lbl">Glemt udtjekning</div></div>';
-  document.getElementById('liveCards').innerHTML=cardsHtml||'<p style="color:#9ca3af;font-size:14px">Ingen medarbejdere endnu.</p>';
+  document.getElementById('liveCards').innerHTML=cardsHtml||'<p style="color:#9ca3af;font-size:14px">Ingen aktive medarbejdere.</p>';
   var typeLabel={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
   var rows=todayEntries.sort(function(a,b){return(a.start||'').localeCompare(b.start||'');}).map(function(e){
-    return'<tr><td><strong>'+(e.name||e.username)+'</strong></td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td>'+
-      '<td><strong>'+e.hours.toFixed(2)+'</strong></td><td><span class="tag tag-'+(e.type||'normal')+'">'+(typeLabel[e.type]||e.type)+'</span></td>'+
-      '<td>'+(e.approved?'<span class="tag tag-approved">✓ Godkendt</span>':e.rejected?'<span class="tag tag-rejected">✗ Afvist</span>':'<span class="tag tag-pending">Afventer</span>')+'</td></tr>';
+    return'<tr><td><strong>'+(e.name||e.username)+'</strong></td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td><td><strong>'+e.hours.toFixed(2)+'</strong></td><td><span class="tag tag-'+(e.type||'normal')+'">'+(typeLabel[e.type]||e.type)+'</span></td><td>'+(e.approved?'<span class="tag tag-approved">✓</span>':e.rejected?'<span class="tag tag-rejected">✗</span>':'<span class="tag tag-pending">⏳</span>')+'</td></tr>';
   }).join('');
   document.getElementById('todayBody').innerHTML=rows||'<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:16px">Ingen registreringer i dag</td></tr>';
   document.getElementById('lastUpdated').textContent='Sidst opdateret: '+new Date().toLocaleTimeString('da-DK');
@@ -543,23 +1192,11 @@ function updateElapsedCards(){
   for(var i=0;i<els.length;i++){var diff=now.getTime()-parseInt(els[i].getAttribute('data-start'));var h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);els[i].textContent=pad(h)+'t '+pad(m)+'m '+pad(s)+'s';}
 }
 
-// ── Periods ───────────────────────────────────────────────
-function dateToPeriod(ds){var d=new Date(ds);var day=d.getDate(),mo=d.getMonth(),yr=d.getFullYear();if(day>=20)return yr+'-'+pad(mo+1);if(mo===0)return(yr-1)+'-12';return yr+'-'+pad(mo);}
-function periodDates(p){var parts=p.split('-');var y=parseInt(parts[0]),m=parseInt(parts[1]);return{start:new Date(y,m-1,20),end:m===12?new Date(y+1,0,19):new Date(y,m,19)};}
-function periodLabel(p){var pd=periodDates(p);var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];return pd.start.getDate()+'. '+mo[pd.start.getMonth()]+' – '+pd.end.getDate()+'. '+mo[pd.end.getMonth()]+' '+pd.end.getFullYear();}
-function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-function getAllPeriods(){var set={};set[dateToPeriod(todayStr())]=true;for(var i=0;i<allEntries.length;i++)set[dateToPeriod(allEntries[i].date)]=true;return Object.keys(set).sort().reverse();}
-function populateAllPeriods(){
-  var periods=getAllPeriods();var ids=['appPeriod','perPeriod','expPeriod'];
-  for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(!el)continue;var v=el.value;el.innerHTML=periods.map(function(p){return'<option value="'+p+'">'+periodLabel(p)+'</option>';}).join('');if(v)el.value=v;}
-}
-function populateEmpSelectors(){
-  var emps=getEmployees();
-  var html='<option value="">Alle medarbejdere</option>'+emps.map(function(e){return'<option value="'+e.username+'">'+e.name+'</option>';}).join('');
-  var ids=['appEmp','perEmp','expEmp'];for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el)el.innerHTML=html;}
-}
+// ═══════════════════════════════════════════════════════════
+// APPROVE
+// ═══════════════════════════════════════════════════════════
+var selectedEntryIds={};
 
-// ── Approve ───────────────────────────────────────────────
 function renderApprove(){
   var period=document.getElementById('appPeriod').value;var empFilter=document.getElementById('appEmp').value;
   if(!period)return;var pd=periodDates(period);
@@ -571,51 +1208,190 @@ function renderApprove(){
   for(var i=0;i<emps.length;i++){
     var emp=emps[i];
     var entries=allEntries.filter(function(e){var d=new Date(e.date);return e.username===emp.username&&d>=pd.start&&d<=pd.end;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-    if(!entries.length)continue;
-    html+='<div class="card"><div class="card-title">👤 '+emp.name+' <span class="tag tag-'+emp.type+'">'+(emp.type==='deltid'?'Deltid':'Fuldtid')+'</span></div><div class="table-wrap"><table><thead><tr><th>Dato</th><th>Start</th><th>Slut</th><th>Timer</th><th>Type</th><th>Status</th><th>Handling</th></tr></thead><tbody>';
+    if(!entries.length){
+      // Show card with just add-button even if no entries
+      html+='<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div class="card-title" style="margin-bottom:0">👤 '+emp.name+' <span class="tag tag-'+emp.type+'">'+(emp.type==='deltid'?'Deltid':'Fuldtid')+'</span></div>'+
+        '<button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="openDraft(\''+emp.username+'\',\''+emp.name.replace(/'/g,"\\'")+'\')" >➕ Opret linje</button></div>'+
+        '<p style="color:#9ca3af;font-size:13px">Ingen registreringer i denne periode.</p></div>';
+      continue;
+    }
+    var empIds=entries.map(function(e){return String(e.id);});
+    html+='<div class="card">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+        '<div class="card-title" style="margin-bottom:0">👤 '+emp.name+' <span class="tag tag-'+emp.type+'">'+(emp.type==='deltid'?'Deltid':'Fuldtid')+'</span></div>'+
+        '<button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="openDraft(\''+emp.username+'\',\''+emp.name.replace(/'/g,"\\'")+'\')">➕ Opret linje</button>'+
+      '</div>'+
+      '<label class="select-all-wrap"><input type="checkbox" class="entry-checkbox" onchange="toggleSelectAll(this,[\''+empIds.join("','")+'\'])"> Vælg alle</label>'+
+      '<div class="table-wrap"><table><thead><tr><th class="cb-cell"></th><th>Dato</th><th>Start</th><th>Slut</th><th>Timer</th><th>Type</th><th>Status</th><th>Handling</th></tr></thead><tbody>';
     for(var j=0;j<entries.length;j++){
       var e=entries[j];var d=new Date(e.date);var dl=days[d.getDay()]+' '+d.getDate()+'. '+mo[d.getMonth()];
-      var cls=typeMap[e.type]||'tag-normal';
-      var stat=e.approved
-        ?'<span class="tag tag-approved">✓ Godkendt</span>'
-        :e.rejected
-          ?'<span class="tag tag-rejected">✗ Afvist</span>'
-          :'<span class="tag tag-pending">⏳ Afventer</span>';
-      var btns=e.approved
-        ?'<button class="btn btn-danger btn-sm" onclick="toggleApprove(\''+e.id+'\',false)">Afvis</button>'
-        :e.rejected
-          ?'<button class="btn btn-success btn-sm" onclick="toggleApprove(\''+e.id+'\',true)">Godkend</button>'
-          :'<button class="btn btn-success btn-sm" onclick="toggleApprove(\''+e.id+'\',true)">Godkend</button>'
-            +'<button class="btn btn-danger btn-sm" onclick="toggleApprove(\''+e.id+'\',false)">Afvis</button>';
-      btns+=' <button class="btn btn-outline btn-sm" onclick="openEdit(\''+e.id+'\')">Ret</button>';
+      var stat=e.approved?'<span class="tag tag-approved">✓ Godkendt</span>':e.rejected?'<span class="tag tag-rejected">✗ Afvist</span>':'<span class="tag tag-pending">⏳</span>';
+      var btns=e.approved?'<button class="btn btn-danger btn-sm" onclick="toggleApprove(\''+e.id+'\',false)">Afvis</button>':e.rejected?'<button class="btn btn-success btn-sm" onclick="toggleApprove(\''+e.id+'\',true)">Godkend</button>':'<button class="btn btn-success btn-sm" onclick="toggleApprove(\''+e.id+'\',true)">✓</button><button class="btn btn-danger btn-sm" onclick="toggleApprove(\''+e.id+'\',false)">✗</button>';
+      btns+=' <button class="btn btn-outline btn-sm" onclick="openEdit(\''+e.id+'\')">✏️</button>';
       btns+=' <button class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#fca5a5" onclick="deleteEntry(\''+e.id+'\')">🗑</button>';
-      html+='<tr><td>'+dl+'</td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td><td><strong>'+e.hours.toFixed(2)+'</strong></td><td><span class="tag '+cls+'">'+(typeLabel[e.type]||e.type)+'</span></td><td>'+stat+'</td><td><div style="display:flex;gap:4px">'+btns+'</div></td></tr>';
+      var pauseWarn=needsPauseWarning(e)?'<span title="Ingen pause registreret - tjek om timer skal korrigeres" style="color:#f59e0b;cursor:help;margin-left:4px">⚠️</span>':'';
+      var isSelected=selectedEntryIds[String(e.id)]?true:false;
+      html+='<tr id="row-'+e.id+'" class="'+(isSelected?'row-selected':'')+(e.approved?'':e.rejected?' row-rejected':' row-pending')+'">'+
+        '<td class="cb-cell"><input type="checkbox" class="entry-checkbox" data-id="'+e.id+'" '+(isSelected?'checked':'')+' onchange="toggleEntrySelect(this)"></td>'+
+        '<td>'+dl+'</td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td><td><strong>'+e.hours.toFixed(2)+'</strong>'+pauseWarn+'</td>'+
+        '<td><span class="tag '+(typeMap[e.type]||'tag-normal')+'">'+(typeLabel[e.type]||e.type)+'</span></td>'+
+        '<td>'+stat+'</td><td><div style="display:flex;gap:4px">'+btns+'</div></td></tr>';
     }
     html+='</tbody></table></div>';
     var pend=entries.filter(function(e){return!e.approved&&!e.rejected;});
-    if(pend.length)html+='<div style="margin-top:10px"><button class="btn btn-success" style="width:auto" onclick="approveAll(\''+emp.username+'\',\''+period+'\')">✅ Godkend alle afventende ('+pend.length+')</button></div>';
+    var pauseWarnCount=entries.filter(needsPauseWarning).length;
+    if(pauseWarnCount>0)html+='<div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e">⚠️ <strong>'+pauseWarnCount+' registrering'+(pauseWarnCount>1?'er':'')+'</strong> mangler pause – timer kan vaere for hoeje. Brug ✏️ til at tilfoeje pause og korrigere timer.</div>';
+    if(pend.length)html+='<div style="margin-top:10px"><button class="btn btn-success" style="width:auto" onclick="approveAll(\''+emp.username+'\',\''+period+'\')">✅ Godkend alle ('+pend.length+')</button></div>';
     html+='</div>';
   }
   document.getElementById('approveList').innerHTML=html||'<div class="alert alert-info">Ingen registreringer i denne periode.</div>';
+  updateBulkBar();
 }
+
+function toggleEntrySelect(cb){
+  var id=String(cb.getAttribute('data-id'));
+  if(cb.checked)selectedEntryIds[id]=true;
+  else delete selectedEntryIds[id];
+  var row=document.getElementById('row-'+id);
+  if(row){if(cb.checked)row.classList.add('row-selected');else row.classList.remove('row-selected');}
+  updateBulkBar();
+}
+
+function toggleSelectAll(masterCb,ids){
+  for(var i=0;i<ids.length;i++){
+    var id=String(ids[i]);
+    if(masterCb.checked)selectedEntryIds[id]=true;
+    else delete selectedEntryIds[id];
+    var cb=document.querySelector('input[data-id="'+id+'"]');
+    if(cb)cb.checked=masterCb.checked;
+    var row=document.getElementById('row-'+id);
+    if(row){if(masterCb.checked)row.classList.add('row-selected');else row.classList.remove('row-selected');}
+  }
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  var ids=Object.keys(selectedEntryIds);var bar=document.getElementById('bulkBar');
+  if(ids.length>0){bar.classList.add('visible');document.getElementById('bulkBarLabel').textContent=ids.length+' valgt';}
+  else{bar.classList.remove('visible');}
+}
+
+function clearSelection(){
+  selectedEntryIds={};
+  document.querySelectorAll('.entry-checkbox').forEach(function(cb){cb.checked=false;});
+  document.querySelectorAll('.row-selected').forEach(function(r){r.classList.remove('row-selected');});
+  updateBulkBar();
+}
+
+function bulkAction(action){
+  var ids=Object.keys(selectedEntryIds);if(!ids.length)return;
+  if(action==='delete'&&!confirm('Slet '+ids.length+' registreringer permanent? Dette kan ikke fortrydes.'))return;
+  var batch=db.batch();
+  for(var i=0;i<ids.length;i++){
+    var ref=entriesCol().doc(String(ids[i]));
+    if(action==='approve')batch.update(ref,{approved:true,rejected:false});
+    else if(action==='reject')batch.update(ref,{approved:false,rejected:true});
+    else if(action==='delete')batch.delete(ref);
+  }
+  batch.commit().then(function(){
+    var msg=action==='approve'?'✅ '+ids.length+' godkendt':action==='reject'?'❌ '+ids.length+' afvist':'🗑 '+ids.length+' slettet';
+    showToast(msg);clearSelection();
+  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+
+function openBulkType(){
+  var ids=Object.keys(selectedEntryIds);if(!ids.length)return;
+  document.getElementById('bulkTypeCount').textContent=ids.length;
+  document.getElementById('bulkTypeSelect').selectedIndex=0;
+  document.getElementById('bulkTypeModal').style.display='flex';
+}
+function closeBulkType(){document.getElementById('bulkTypeModal').style.display='none';}
+function saveBulkType(){
+  var ids=Object.keys(selectedEntryIds);if(!ids.length)return;
+  var newType=document.getElementById('bulkTypeSelect').value;
+  var batch=db.batch();
+  for(var i=0;i<ids.length;i++){
+    var entry=null;
+    for(var j=0;j<allEntries.length;j++){if(String(allEntries[j].id)===String(ids[i])){entry=allEntries[j];break;}}
+    if(!entry)continue;
+    var hours=0;
+    if(entry.start&&entry.end){
+      var brk=entry.breakMin||0;
+      hours=Math.max(0,Math.round((timeToH(entry.end)-timeToH(entry.start)-brk/60)*100)/100);
+    }
+    batch.update(entriesCol().doc(String(ids[i])),{type:newType,hours:hours,editedByAdmin:true});
+  }
+  batch.commit().then(function(){
+    closeBulkType();
+    showToast('🔄 Type ændret på '+ids.length+' registreringer');
+    clearSelection();
+  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+
 function toggleApprove(id,approved){
-  var update=approved ? {approved:true,rejected:false} : {approved:false,rejected:true};
-  entriesCol().doc(String(id)).update(update).then(function(){
-    showToast(approved?'✅ Godkendt':'❌ Afvist');
-  }).catch(function(){showToast('⚠️ Fejl');});
+  entriesCol().doc(String(id)).update(approved?{approved:true,rejected:false}:{approved:false,rejected:true}).then(function(){showToast(approved?'✅ Godkendt':'❌ Afvist');}).catch(function(){showToast('⚠️ Fejl');});
 }
 function deleteEntry(id){
   if(!confirm('Slet denne registrering permanent?'))return;
-  entriesCol().doc(String(id)).delete().then(function(){
-    showToast('🗑 Slettet');
-  }).catch(function(){showToast('⚠️ Fejl');});
+  entriesCol().doc(String(id)).delete().then(function(){showToast('🗑 Slettet');}).catch(function(){showToast('⚠️ Fejl');});
 }
 function approveAll(username,period){
   var pd=periodDates(period);
   var toApprove=allEntries.filter(function(e){var d=new Date(e.date);return e.username===username&&d>=pd.start&&d<=pd.end&&!e.approved&&!e.rejected;});
-  var batch=db.batch();
-  for(var i=0;i<toApprove.length;i++)batch.update(entriesCol().doc(String(toApprove[i].id)),{approved:true,rejected:false});
+  var batch=db.batch();for(var i=0;i<toApprove.length;i++)batch.update(entriesCol().doc(String(toApprove[i].id)),{approved:true,rejected:false});
   batch.commit().then(function(){showToast('✅ Alle godkendt!');});
+}
+
+// ═══════════════════════════════════════════════════════════
+// OPRET KLADDE (ADMIN DRAFT ENTRY)
+// ═══════════════════════════════════════════════════════════
+var draftTarget=null;
+function openDraft(username,name){
+  draftTarget={username:username,name:name};
+  document.getElementById('draftEmpName').textContent=name;
+  document.getElementById('draftDate').value=todayStr();
+  document.getElementById('draftStart').value='08:00';
+  document.getElementById('draftEnd').value='16:00';
+  document.getElementById('draftBreak').value='0';
+  document.getElementById('draftType').selectedIndex=0;
+  document.getElementById('draftNote').value='';
+  document.getElementById('addDraftModal').style.display='flex';
+}
+function closeDraft(){document.getElementById('addDraftModal').style.display='none';draftTarget=null;}
+function saveDraft(){
+  if(!draftTarget)return;
+  var date=document.getElementById('draftDate').value;
+  var start=document.getElementById('draftStart').value;
+  var end=document.getElementById('draftEnd').value;
+  var brk=parseInt(document.getElementById('draftBreak').value)||0;
+  var type=document.getElementById('draftType').value;
+  var note=document.getElementById('draftNote').value.trim();
+  if(!date||!start||!end){showToast('⚠️ Udfyld dato, start og slut');return;}
+  start=applyMinStartTime(start,currentCompany.code);
+  var hours=Math.max(0,Math.round((timeToH(end)-timeToH(start)-brk/60)*100)/100);
+  if(hours<=0){showToast('⚠️ Sluttidspunkt skal være efter starttidspunkt');return;}
+  var emps=getEmployees();var emp=null;
+  for(var i=0;i<emps.length;i++){if(emps[i].username===draftTarget.username){emp=emps[i];break;}}
+  var entry={
+    id:uid(),
+    username:draftTarget.username,
+    name:draftTarget.name,
+    date:date,
+    start:start,
+    end:end,
+    hours:hours,
+    breakMin:brk,
+    type:type,
+    note:note||'',
+    approved:true,
+    rejected:false,
+    method:'admin-draft',
+    createdByAdmin:true,
+    createdAt:new Date().toISOString()
+  };
+  entriesCol().doc(String(entry.id)).set(entry).then(function(){
+    closeDraft();showToast('✅ Registrering oprettet og godkendt');
+  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
 }
 function openEdit(id){
   var entry=null;for(var i=0;i<allEntries.length;i++){if(String(allEntries[i].id)===String(id)){entry=allEntries[i];break;}}
@@ -635,301 +1411,309 @@ function saveEdit(){
   if(!editTarget)return;
   var s=document.getElementById('eStart').value;var e=document.getElementById('eEnd').value;
   var brk=parseInt(document.getElementById('eBreak').value)||0;
+  s=applyMinStartTime(s,currentCompany.code);
   var hours=(s&&e)?Math.max(0,Math.round((timeToH(e)-timeToH(s)-brk/60)*100)/100):0;
   entriesCol().doc(String(editTarget.id)).update({date:document.getElementById('eDate').value,start:s,end:e,hours:hours,breakMin:brk,type:document.getElementById('eType').value,note:document.getElementById('eNote').value,editedByAdmin:true})
     .then(function(){closeEdit();showToast('✏️ Rettet');}).catch(function(){showToast('⚠️ Fejl');});
 }
 
-// ── Period ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// PERIOD / LØN
+// ═══════════════════════════════════════════════════════════
 function renderPeriod(){
   var period=document.getElementById('perPeriod').value;var empFilter=document.getElementById('perEmp').value;
   if(!period)return;var pd=periodDates(period);
   var emps=empFilter?getEmployees().filter(function(e){return e.username===empFilter;}):getEmployees();
   var settings=getSettings();var html='';
-  var ovens=settings.ovens||'ka';
-
   for(var i=0;i<emps.length;i++){
     var emp=emps[i];
     var entries=allEntries.filter(function(e){var d=new Date(e.date);return e.username===emp.username&&d>=pd.start&&d<=pd.end&&e.approved;});
     if(!entries.length)continue;
-
-    var totalNormal=0,totalEvening=0,totalNight=0,totalSat=0,totalSun=0,totalOT1=0,totalOT2=0;
-    var totalFerie=0,totalFeriefri=0,totalFravoer=0,totalFriuden=0,totalHours=0;
-
-    for(var j=0;j<entries.length;j++){
-      var e=entries[j];
-      totalHours+=e.hours;
-      if(e.type==='ferie'){totalFerie+=e.hours;}
-      else if(e.type==='feriefri'){totalFeriefri+=e.hours;}
-      else if(e.type==='fravoer'){totalFravoer+=e.hours;}
-      else if(e.type==='friuden'){totalFriuden+=e.hours;}
-      else {
-        var t=calcTillaeg(e,settings);
-        totalNormal+=t.normal;totalEvening+=t.evening;totalNight+=t.night;
-        totalSat+=t.saturday;totalSun+=t.sunday;
-        totalOT1+=t.ot1;totalOT2+=t.ot2;
-      }
-    }
-
-    html+='<div class="card"><div class="card-title">👤 '+emp.name+' <span class="tag tag-'+emp.type+'">'+(emp.type==='deltid'?'Deltid':'Fuldtid')+'</span></div>';
-    html+='<div style="background:#f9fafb;border-radius:10px;padding:14px">';
-    html+='<div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Timeoversigt til lønsystem</div>';
-
-    if(totalNormal>0)   html+='<div class="sum-row"><span>Normale timer ('+settings.dayStart+'–'+settings.dayEnd+')</span><span style="font-weight:600">'+totalNormal.toFixed(2)+' t</span></div>';
-    if(totalEvening>0)  html+='<div class="sum-row"><span>Aftentimer ('+settings.dayEnd+'–'+settings.nightStart+')</span><span style="font-weight:600">'+totalEvening.toFixed(2)+' t</span></div>';
-    if(totalNight>0)    html+='<div class="sum-row"><span>Nattimer ('+settings.nightStart+'–'+settings.dayStart+')</span><span style="font-weight:600">'+totalNight.toFixed(2)+' t</span></div>';
-    if(totalSat>0)      html+='<div class="sum-row"><span>Lørdagstimer</span><span style="font-weight:600">'+totalSat.toFixed(2)+' t</span></div>';
-    if(totalSun>0)      html+='<div class="sum-row"><span>Søn/helligdagstimer</span><span style="font-weight:600">'+totalSun.toFixed(2)+' t</span></div>';
-    if(totalOT1>0)      html+='<div class="sum-row"><span>Overarbejde 1.-3. time</span><span style="font-weight:600">'+totalOT1.toFixed(2)+' t</span></div>';
-    if(totalOT2>0)      html+='<div class="sum-row"><span>Overarbejde 4.+ time</span><span style="font-weight:600">'+totalOT2.toFixed(2)+' t</span></div>';
-    if(totalFerie>0)    html+='<div class="sum-row"><span>Ferietimer</span><span style="font-weight:600">'+totalFerie.toFixed(2)+' t</span></div>';
-    if(totalFeriefri>0) html+='<div class="sum-row"><span>Feriefridage</span><span style="font-weight:600">'+totalFeriefri.toFixed(2)+' t</span></div>';
-    if(totalFravoer>0)  html+='<div class="sum-row"><span>Fravær</span><span style="font-weight:600">'+totalFravoer.toFixed(2)+' t</span></div>';
-    if(totalFriuden>0)  html+='<div class="sum-row"><span>Fri uden løn</span><span style="font-weight:600">'+totalFriuden.toFixed(2)+' t</span></div>';
-
-    html+='<div class="sum-row" style="margin-top:4px"><span><strong>Total timer</strong></span><span style="font-weight:700">'+totalHours.toFixed(2)+' t</span></div>';
-    html+='</div></div>';
+    var totals=calcTotals(emp,entries,settings);
+    html+='<div class="card"><div class="card-title">👤 '+emp.name+' <span class="tag tag-'+emp.type+'">'+(emp.type==='deltid'?'Deltid':'Fuldtid')+'</span></div>'+renderTotalsHTML(totals,settings)+'</div>';
   }
   document.getElementById('periodContent').innerHTML=html||'<div class="alert alert-info">Ingen godkendte registreringer.</div>';
 }
-
-// ── Timefordeling (KA/DTL) ────────────────────────────────
-function calcTillaeg(entry, settings){
-  if(!entry.start||!entry.end||entry.type!=='normal')
-    return {normal:entry.hours,evening:0,night:0,saturday:0,sunday:0,ot1:0,ot2:0};
-
-  var date=new Date(entry.date);
-  var isSat=date.getDay()===6;
-  var isSun=date.getDay()===0||isHoliday(entry.date);
-
-  var startH=timeToH(entry.start);
-  var endH=timeToH(entry.end);
-  if(endH<=startH) endH+=24;
-
-  var dayStartH=timeToH(settings.dayStart||'05:00');
-  var dayEndH=timeToH(settings.dayEnd||'18:00');
-  var nightStartH=timeToH(settings.nightStart||'22:00');
-  var normalHours=settings.normalHours||7.4;
-  var otLimit=settings.otLimit||3;
-
-  var normal=0,evening=0,night=0,saturday=0,sunday=0;
-
-  if(isSun){
-    sunday=entry.hours;
-  } else if(isSat){
-    saturday=entry.hours;
-  } else {
-    var step=0.25;
-    for(var t=startH;t<endH;t+=step){
-      var mid=t+step/2;if(mid>=24)mid-=24;
-      if(mid<dayStartH||mid>=nightStartH) night+=step;
-      else if(mid>=dayEndH) evening+=step;
-      else normal+=step;
-    }
-    normal=Math.round(normal*100)/100;
-    evening=Math.round(evening*100)/100;
-    night=Math.round(night*100)/100;
+function calcTotals(emp,entries,settings){
+  var t={normal:0,evening:0,night:0,saturday:0,sunday:0,ot1:0,ot2:0,ferie:0,feriefri:0,fravoer:0,friuden:0,total:0};
+  for(var j=0;j<entries.length;j++){
+    var e=entries[j];t.total+=e.hours;
+    if(e.type==='ferie'){t.ferie+=e.hours;}else if(e.type==='feriefri'){t.feriefri+=e.hours;}else if(e.type==='fravoer'){t.fravoer+=e.hours;}else if(e.type==='friuden'){t.friuden+=e.hours;}
+    else{var tl=calcTillaeg(e,settings,emp.empRole||'chauffor');t.normal+=tl.normal;t.evening+=tl.evening;t.night+=tl.night;t.saturday+=tl.saturday;t.sunday+=tl.sunday;t.ot1+=tl.ot1;t.ot2+=tl.ot2;}
   }
-
-  // Overarbejde
-  var otHours=Math.max(0,entry.hours-normalHours);
-  var ot1=Math.min(otHours,otLimit);
-  var ot2=Math.max(0,otHours-otLimit);
-
-  return {normal:normal,evening:evening,night:night,saturday:saturday,sunday:sunday,ot1:ot1,ot2:ot2};
+  return t;
 }
-function getEaster(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,month-1,day);}
-function addDays(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
-function isHoliday(ds){var d=new Date(ds);var m=d.getMonth()+1,day=d.getDate(),y=d.getFullYear();if((m===1&&day===1)||(m===12&&[24,25,26,31].indexOf(day)>=0))return true;var easter=getEaster(y);var dates=[easter,addDays(easter,1),addDays(easter,-3),addDays(easter,-2),addDays(easter,39),addDays(easter,49),addDays(easter,50)];for(var i=0;i<dates.length;i++){if(dates[i].toISOString().split('T')[0]===ds)return true;}return false;}
-function calcBreakdown(emp,entries,settings){
-  var bd={normal:0,overarbejde:0,saturday:0,ferie:0,feriefri:0,fravoer:0,friuden:0,sh:0};
-  for(var i=0;i<entries.length;i++){
-    var e=entries[i];var d=new Date(e.date);var isSat=d.getDay()===6;var isHol=isHoliday(e.date);
-    if(e.type!=='normal'){bd[e.type]=(bd[e.type]||0)+e.hours;if(isHol&&emp.type==='deltid')bd.sh+=e.hours;continue;}
-    if(isSat){bd.saturday+=e.hours;}
-    else{
-      var norm=settings.normalHours||7.4;
-      if(e.hours<=norm){bd.normal+=e.hours;}
-      else{bd.normal+=norm;bd.overarbejde+=e.hours-norm;}
-    }
-    if(isHol&&emp.type==='deltid')bd.sh+=e.hours;
-  }
-  return bd;
+function renderTotalsHTML(t,settings){
+  var html='<div style="background:#f9fafb;border-radius:10px;padding:14px">';
+  if(t.normal>0)html+='<div class="sum-row"><span>Normale timer</span><span>'+t.normal.toFixed(2)+' t</span></div>';
+  if(t.evening>0)html+='<div class="sum-row"><span>Aftentimer</span><span>'+t.evening.toFixed(2)+' t</span></div>';
+  if(t.night>0)html+='<div class="sum-row"><span>Nattimer</span><span>'+t.night.toFixed(2)+' t</span></div>';
+  if(t.saturday>0)html+='<div class="sum-row"><span>Lørdagstimer</span><span>'+t.saturday.toFixed(2)+' t</span></div>';
+  if(t.sunday>0)html+='<div class="sum-row"><span>Søn/helligdagstimer</span><span>'+t.sunday.toFixed(2)+' t</span></div>';
+  if(t.ot1>0)html+='<div class="sum-row"><span>OT 1.-3. time</span><span>'+t.ot1.toFixed(2)+' t</span></div>';
+  if(t.ot2>0)html+='<div class="sum-row"><span>OT 4.+ time</span><span>'+t.ot2.toFixed(2)+' t</span></div>';
+  if(t.ferie>0)html+='<div class="sum-row"><span>Ferietimer</span><span>'+t.ferie.toFixed(2)+' t</span></div>';
+  if(t.feriefri>0)html+='<div class="sum-row"><span>Feriefridage</span><span>'+t.feriefri.toFixed(2)+' t</span></div>';
+  if(t.fravoer>0)html+='<div class="sum-row"><span>Fravær</span><span>'+t.fravoer.toFixed(2)+' t</span></div>';
+  if(t.friuden>0)html+='<div class="sum-row"><span>Fri u. løn</span><span>'+t.friuden.toFixed(2)+' t</span></div>';
+  html+='<div class="sum-row"><span><strong>Total</strong></span><span><strong>'+t.total.toFixed(2)+' t</strong></span></div></div>';
+  return html;
 }
 
-// ── Export ────────────────────────────────────────────────
-function exportExcel(){
-  if(typeof XLSX==='undefined'){showToast('⚠️ Excel ikke indlæst');return;}
-  var period=document.getElementById('expPeriod').value;
-  var empFilter=document.getElementById('expEmp').value;
-  if(!period){showToast('⚠️ Vælg en periode');return;}
-  var pd=periodDates(period);
-  var emps=empFilter?getEmployees().filter(function(e){return e.username===empFilter;}):getEmployees();
-  var settings=getSettings();var wb=XLSX.utils.book_new();
-  var summaryData=[
-    ['TIDSREGISTRERING – '+currentCompany.name],
-    ['Overenskomst: '+(settings.ovens==='dtl'?'DTL/3F Transport':'KA/Krifa Transport')],
-    ['Periode: '+periodLabel(period)],
-    ['Eksporteret: '+new Date().toLocaleString('da-DK')],
-    [],
-    ['Medarbejder','Type','Normale t','Aften t','Nat t','Lørdag t','Søn/helligdag t','OT 1.-3. t','OT 4.+ t','Ferie t','Feriefri t','Fravær t','Fri u.løn t','Total t']
-  ];
+// ═══════════════════════════════════════════════════════════
+// EXPORT HELPERS
+// ═══════════════════════════════════════════════════════════
+function filterEntriesForExport(entries,filterVal){
+  if(filterVal==='approved')return entries.filter(function(e){return e.approved;});
+  if(filterVal==='pending')return entries.filter(function(e){return!e.approved&&!e.rejected;});
+  return entries;
+}
+function entryStatusLabel(e){if(e.approved)return'Godkendt';if(e.rejected)return'Afvist';return'Ikke godkendt';}
+function entryStatusEmoji(e){if(e.approved)return'✅';if(e.rejected)return'❌ Afvist';return'😞 Ikke godkendt';}
+
+function getExportEmployeeList(periodId, empFilterUsername, includeArchived){
+  var pd=periodDates(periodId);
+  var active=getEmployees();
+  var archived=includeArchived?archivedEmployees:[];
+  var all=active.concat(archived.map(function(e){return Object.assign({},e,{_isArchived:true});}));
+  if(empFilterUsername) all=all.filter(function(e){return e.username===empFilterUsername;});
+  return all;
+}
+
+function getExportData(periodId,empFilterUsername,filterVal,includeArchived){
+  var pd=periodDates(periodId);
+  var emps=getExportEmployeeList(periodId,empFilterUsername,includeArchived);
+  var settings=getSettings();var result=[];
   for(var i=0;i<emps.length;i++){
     var emp=emps[i];
-    var entries=allEntries.filter(function(e){var d=new Date(e.date);return e.username===emp.username&&d>=pd.start&&d<=pd.end&&e.approved;});
+    var raw=allEntries.filter(function(e){var d=new Date(e.date);return e.username===emp.username&&d>=pd.start&&d<=pd.end;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+    var entries=filterEntriesForExport(raw,filterVal);
     if(!entries.length)continue;
-    var totN=0,totE=0,totNi=0,totSat=0,totSun=0,totOT1=0,totOT2=0,totFer=0,totFri=0,totFrav=0,totUden=0,totAll=0;
-    for(var j=0;j<entries.length;j++){
-      var e=entries[j];totAll+=e.hours;
-      if(e.type==='ferie'){totFer+=e.hours;}
-      else if(e.type==='feriefri'){totFri+=e.hours;}
-      else if(e.type==='fravoer'){totFrav+=e.hours;}
-      else if(e.type==='friuden'){totUden+=e.hours;}
-      else{var t=calcTillaeg(e,settings);totN+=t.normal;totE+=t.evening;totNi+=t.night;totSat+=t.saturday;totSun+=t.sunday;totOT1+=t.ot1;totOT2+=t.ot2;}
-    }
-    summaryData.push([emp.name,emp.type==='deltid'?'Deltid':'Fuldtid',totN.toFixed(2),totE.toFixed(2),totNi.toFixed(2),totSat.toFixed(2),totSun.toFixed(2),totOT1.toFixed(2),totOT2.toFixed(2),totFer.toFixed(2),totFri.toFixed(2),totFrav.toFixed(2),totUden.toFixed(2),totAll.toFixed(2)]);
-    // Detaljeret ark per medarbejder
-    var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
-    var typeL={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
-    var sheetData=[[emp.name],['Periode: '+periodLabel(period)],[],
-      ['Dato','Dag','Start','Slut','Timer','Type','Normal t','Aften t','Nat t','Lørdag t','Søn t','OT 1.-3. t','OT 4.+ t','Note']];
-    var sorted=entries.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-    for(var j=0;j<sorted.length;j++){
-      var e=sorted[j];var d=new Date(e.date);
-      var t=calcTillaeg(e,settings);
-      sheetData.push([e.date,days[d.getDay()],e.start||'',e.end||'',e.hours.toFixed(2),typeL[e.type]||e.type,t.normal.toFixed(2),t.evening.toFixed(2),t.night.toFixed(2),t.saturday.toFixed(2),t.sunday.toFixed(2),t.ot1.toFixed(2),t.ot2.toFixed(2),e.note||'']);
-    }
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sheetData),emp.name.slice(0,31));
+    result.push({emp:emp,entries:entries,settings:settings,isArchived:!!emp._isArchived});
+  }
+  return result;
+}
+
+// ─── EXCEL ───
+function buildExcelWorkbook(periodId,empFilter,filterVal,includeArchived){
+  var data=getExportData(periodId,empFilter,filterVal,includeArchived);
+  var settings=getSettings();var wb=XLSX.utils.book_new();
+  var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
+  var typeL={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
+  var summaryData=[
+    ['TIDSREGISTRERING – '+currentCompany.name],['Periode: '+periodLabel(periodId)],
+    ['Filter: '+(filterVal==='approved'?'Kun godkendte':filterVal==='pending'?'Kun ikke-godkendte':'Alle')],
+    ['Arkiverede medarbejdere: '+(includeArchived?'Inkluderet':'Ikke inkluderet')],
+    ['Eksporteret: '+new Date().toLocaleString('da-DK')],[],
+    ['Medarbejder','Status','Type','Normale t','Aften t','Nat t','Lørdag t','Søn/helligdag t','OT 1-3 t','OT 4+ t','Ferie t','Feriefri t','Fravær t','Fri u.løn t','Total t']
+  ];
+  for(var i=0;i<data.length;i++){
+    var emp=data[i].emp;var entries=data[i].entries;var isArch=data[i].isArchived;
+    var t={normal:0,evening:0,night:0,saturday:0,sunday:0,ot1:0,ot2:0,ferie:0,feriefri:0,fravoer:0,friuden:0,total:0};
+    for(var j=0;j<entries.length;j++){var e=entries[j];t.total+=e.hours;if(e.type==='ferie'){t.ferie+=e.hours;}else if(e.type==='feriefri'){t.feriefri+=e.hours;}else if(e.type==='fravoer'){t.fravoer+=e.hours;}else if(e.type==='friuden'){t.friuden+=e.hours;}else{var tl=calcTillaeg(e,settings,emp.empRole||'chauffor');t.normal+=tl.normal;t.evening+=tl.evening;t.night+=tl.night;t.saturday+=tl.saturday;t.sunday+=tl.sunday;t.ot1+=tl.ot1;t.ot2+=tl.ot2;}}
+    var nameLabel=emp.name+(isArch?' [STOPPET '+formatDate(emp.stopDate||'')+']':'');
+    summaryData.push([nameLabel,isArch?'Arkiveret':'Aktiv',emp.type==='deltid'?'Deltid':'Fuldtid',t.normal.toFixed(2),t.evening.toFixed(2),t.night.toFixed(2),t.saturday.toFixed(2),t.sunday.toFixed(2),t.ot1.toFixed(2),t.ot2.toFixed(2),t.ferie.toFixed(2),t.feriefri.toFixed(2),t.fravoer.toFixed(2),t.friuden.toFixed(2),t.total.toFixed(2)]);
+    var sheetData=[[nameLabel],[emp.type==='deltid'?'Deltid':'Fuldtid'],['Periode: '+periodLabel(periodId)],[],
+      ['Dato','Dag','Start','Slut','Timer','Type','Normal t','Aften t','Nat t','Lørdag t','Søn t','OT 1-3 t','OT 4+ t','Status','Note']];
+    for(var j=0;j<entries.length;j++){var e=entries[j];var d=new Date(e.date);var tl=calcTillaeg(e,settings,emp.empRole||'chauffor');sheetData.push([e.date,days[d.getDay()],e.start||'',e.end||'',e.hours.toFixed(2),typeL[e.type]||e.type,tl.normal.toFixed(2),tl.evening.toFixed(2),tl.night.toFixed(2),tl.saturday.toFixed(2),tl.sunday.toFixed(2),tl.ot1.toFixed(2),tl.ot2.toFixed(2),entryStatusEmoji(e),e.note||'']);}
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sheetData),(nameLabel).slice(0,31));
   }
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summaryData),'Oversigt');
-  XLSX.writeFile(wb,'tidsreg_'+currentCompany.code+'_'+period+'.xlsx');
-  showToast('📊 Excel eksporteret!');
+  return wb;
 }
-function exportPDF(){
-  var period=document.getElementById('expPeriod').value;var empFilter=document.getElementById('expEmp').value;
-  var pd=periodDates(period);var emps=empFilter?getEmployees().filter(function(e){return e.username===empFilter;}):getEmployees();
+
+function exportExcel(){
+  var period=document.getElementById('expPeriod').value;if(!period){showToast('⚠️ Vælg en periode');return;}
+  var empFilter=document.getElementById('expEmp').value;var filterVal=document.getElementById('expFilter').value;
+  var incArch=document.getElementById('expArchived').value==='yes';
+  var wb=buildExcelWorkbook(period,empFilter,filterVal,incArch);
+  XLSX.writeFile(wb,'tidsreg_'+currentCompany.code+'_'+period+'.xlsx');showToast('📊 Excel eksporteret!');
+}
+function revisorExportExcel(){
+  var period=document.getElementById('revExpPeriod').value;if(!period){showToast('⚠️ Vælg en periode');return;}
+  var empFilter=document.getElementById('revExpEmp').value;var filterVal=document.getElementById('revExpFilter').value;
+  var incArch=document.getElementById('revExpArchived').value==='yes';
+  var wb=buildExcelWorkbook(period,empFilter,filterVal,incArch);
+  XLSX.writeFile(wb,'tidsreg_'+currentCompany.code+'_'+period+'_revisor.xlsx');showToast('📊 Excel eksporteret!');
+}
+
+// ─── CSV ───
+function buildCSV(periodId,empFilter,filterVal,includeArchived){
+  var data=getExportData(periodId,empFilter,filterVal,includeArchived);
   var settings=getSettings();var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
   var typeL={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
-  var labels={normal:'Normale timer',ot1:'OT Kat. 1',ot2:'OT Kat. 2',ot3:'OT Kat. 3',saturday:'Lørdagstimer',sunday:'Søn/helligdag',ferie:'Ferietimer',feriefri:'Feriefridage',fravoer:'Fravær',friuden:'Fri u. løn',sh:'S/H-tillæg'};
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tidsregistrering – '+currentCompany.name+'</title><style>';
-  html+='body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#1e2235}';
-  html+='h1{font-size:20px;margin-bottom:4px}h2{font-size:14px;border-bottom:2px solid #2563eb;padding-bottom:4px;margin:24px 0 8px;color:#2563eb}';
-  html+='.meta{font-size:11px;color:#6b7280;margin-bottom:20px}';
-  html+='table{width:100%;border-collapse:collapse;margin-bottom:14px}';
-  html+='th{background:#f0f4ff;padding:6px 8px;text-align:left;font-size:10px;border-bottom:2px solid #2563eb}';
-  html+='td{padding:5px 8px;border-bottom:1px solid #e2e4ef}.total-row td{font-weight:bold;background:#f9fafb}';
-  html+='@media print{@page{margin:1.5cm}button{display:none!important}.no-print{display:none!important}}';
-  html+='button.print-btn{display:block;margin:0 auto 20px;padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}';
-  html+='</style></head><body>';
-  html+='<button class="print-btn no-print" onclick="window.print()">🖨️ Udskriv / Gem som PDF</button>';
-  html+='<h1>'+currentCompany.name+'</h1>';
-  html+='<div class="meta">Periode: '+periodLabel(period)+' &nbsp;·&nbsp; Overenskomst: '+(settings.ovens==='dtl'?'DTL/3F Transport':'KA/Krifa Transport')+'<br>Eksporteret: '+new Date().toLocaleString('da-DK')+'</div>';
-
-  for(var i=0;i<emps.length;i++){
-    var emp=emps[i];var entries=allEntries.filter(function(e){var d=new Date(e.date);return e.username===emp.username&&d>=pd.start&&d<=pd.end&&e.approved;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-    if(!entries.length)continue;var bd=calcBreakdown(emp,entries,settings);var total=0;for(var k in bd)total+=bd[k];
-    html+='<h2>'+emp.name+' ('+(emp.type==='deltid'?'Deltid':'Fuldtid')+')</h2>';
-    html+='<table><thead><tr><th>Dato</th><th>Dag</th><th>Start</th><th>Slut</th><th>Timer</th><th>Type</th><th>Note</th></tr></thead><tbody>';
-    for(var j=0;j<entries.length;j++){var e=entries[j];var d=new Date(e.date);html+='<tr><td>'+e.date+'</td><td>'+days[d.getDay()]+'</td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td><td><b>'+e.hours.toFixed(2)+'</b></td><td>'+(typeL[e.type]||e.type)+'</td><td>'+(e.note||'')+'</td></tr>';}
-    html+='</tbody></table><table><thead><tr><th colspan="2">Timeoversigt</th></tr></thead><tbody>';
-    for(var k in bd){if(bd[k]>0)html+='<tr><td>'+(labels[k]||k)+'</td><td><b>'+bd[k].toFixed(2)+' t</b></td></tr>';}
-    html+='<tr class="total-row"><td>TOTAL</td><td><b>'+total.toFixed(2)+' t</b></td></tr></tbody></table>';
+  var rows=[['# Tidsregistrering – '+currentCompany.name],['# Periode: '+periodLabel(periodId)],['# Arkiverede: '+(includeArchived?'Ja':'Nej')],['# Eksporteret: '+new Date().toLocaleString('da-DK')],[],
+    ['Medarbejdernr','Navn','Ansættelsesstatus','Type','Dato','Dag','Start','Slut','Timer','Timetype','Normal t','Aften t','Nat t','Lørdag t','Søn/helligdag t','OT 1-3 t','OT 4+ t','Pause min','Godkendelsesstatus','Note']];
+  for(var i=0;i<data.length;i++){
+    var emp=data[i].emp;var entries=data[i].entries;var isArch=data[i].isArchived;
+    for(var j=0;j<entries.length;j++){
+      var e=entries[j];var d=new Date(e.date);var tl=calcTillaeg(e,settings,emp.empRole||'chauffor');
+      rows.push([emp.empNo||'',emp.name,isArch?'Arkiveret [STOPPET '+formatDate(emp.stopDate||'')+']':'Aktiv',emp.type==='deltid'?'Deltid':'Fuldtid',e.date,days[d.getDay()],e.start||'',e.end||'',e.hours.toFixed(2),typeL[e.type]||e.type,tl.normal.toFixed(2),tl.evening.toFixed(2),tl.night.toFixed(2),tl.saturday.toFixed(2),tl.sunday.toFixed(2),tl.ot1.toFixed(2),tl.ot2.toFixed(2),e.breakMin||0,entryStatusLabel(e),(e.note||'').replace(/,/g,' ')]);
+    }
+    rows.push([]);
   }
-  html+='</body></html>';
-  var blob=new Blob([html],{type:'text/html;charset=utf-8'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='tidsreg_'+currentCompany.code+'_'+period+'.html';
-  document.body.appendChild(a);a.click();
-  document.body.removeChild(a);
-  setTimeout(function(){URL.revokeObjectURL(url);},10000);
-  showToast('📄 Åbn filen i browser → Udskriv → Gem som PDF');
+  return rows.map(function(r){return r.map(function(cell){var s=String(cell||'');if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)s='"'+s.replace(/"/g,'""')+'"';return s;}).join(',');}).join('\r\n');
+}
+function downloadCSV(csv,filename){var bom='\uFEFF';var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},10000);}
+function exportCSV(){
+  var period=document.getElementById('expPeriod').value;if(!period){showToast('⚠️ Vælg en periode');return;}
+  downloadCSV(buildCSV(period,document.getElementById('expEmp').value,document.getElementById('expFilter').value,document.getElementById('expArchived').value==='yes'),'tidsreg_'+currentCompany.code+'_'+period+'.csv');
+  showToast('📋 CSV eksporteret!');
+}
+function revisorExportCSV(){
+  var period=document.getElementById('revExpPeriod').value;if(!period){showToast('⚠️ Vælg en periode');return;}
+  downloadCSV(buildCSV(period,document.getElementById('revExpEmp').value,document.getElementById('revExpFilter').value,document.getElementById('revExpArchived').value==='yes'),'tidsreg_'+currentCompany.code+'_'+period+'_revisor.csv');
+  showToast('📋 CSV eksporteret!');
 }
 
-// ── Employees ─────────────────────────────────────────────
+// ─── PDF ───
+function buildPDFHTML(periodId,empFilter,filterVal,includeArchived,settings){
+  var data=getExportData(periodId,empFilter,filterVal,includeArchived);
+  var days=['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
+  var typeL={normal:'Arbejde',ferie:'Ferie',feriefri:'Feriefri',friuden:'Fri u. løn',fravoer:'Fravær'};
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MinTid – '+currentCompany.name+'</title><style>';
+  html+='body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#1e2235;max-width:900px;margin:0 auto}';
+  html+='.header{margin-bottom:24px;border-bottom:3px solid #2563eb;padding-bottom:16px}';
+  html+='.brand{font-size:26px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px}';
+  html+='.brand span{color:#2563eb}.meta{font-size:11px;color:#6b7280;line-height:1.8}';
+  html+='h2{font-size:14px;border-bottom:2px solid #2563eb;padding-bottom:4px;margin:24px 0 8px;color:#2563eb}';
+  html+='.archived-header{color:#6b7280;border-bottom-color:#9ca3af}';
+  html+='table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:11px}';
+  html+='th{background:#f0f4ff;padding:6px 8px;text-align:left;font-size:10px;border-bottom:2px solid #2563eb}';
+  html+='td{padding:5px 8px;border-bottom:1px solid #e2e4ef}.total-row td{font-weight:bold;background:#f9fafb;border-top:2px solid #e2e4ef}';
+  html+='.status-approved{color:#059669;font-weight:700}.status-pending{color:#d97706;font-weight:700}.status-rejected{color:#dc2626;font-weight:700}';
+  html+='.row-pending{background:#fffdf0}.row-rejected{background:#fff5f5}';
+  html+='.archived-banner{background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#6b7280}';
+  html+='.summary-box{background:#f0f4ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:14px}';
+  html+='.sum-line{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid #e2e4ef}';
+  html+='.sum-line:last-child{border-bottom:none;font-weight:bold;font-size:12px;margin-top:4px}';
+  html+='button.print-btn{display:block;margin:0 auto 20px;padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}';
+  html+='@media print{@page{margin:1.5cm}.no-print{display:none!important}}</style></head><body>';
+  html+='<button class="print-btn no-print" onclick="window.print()">🖨️ Udskriv / Gem som PDF</button>';
+  html+='<div class="header"><div class="brand">Min<span>Tid</span></div><div class="meta">';
+  html+='<strong>'+currentCompany.name+'</strong><br>Periode: '+periodLabel(periodId)+'<br>';
+  html+='Filter: '+(filterVal==='approved'?'Kun godkendte':filterVal==='pending'?'Kun ikke-godkendte':'Alle registreringer')+'<br>';
+  html+='Arkiverede: '+(includeArchived?'Inkluderet':'Ikke inkluderet')+'<br>';
+  html+='Eksporteret: '+new Date().toLocaleString('da-DK');
+  if(currentRole==='revisor')html+='<br>Revisor: '+currentRevisorUser.name;
+  html+='</div></div>';
+  if(filterVal!=='approved')html+='<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:#92400e"><strong>Bemærk:</strong> Rapport indeholder poster der ikke er godkendt. Disse er markeret med 😞. Afviste er markeret med ❌.</div>';
+  for(var i=0;i<data.length;i++){
+    var emp=data[i].emp;var entries=data[i].entries;var isArch=data[i].isArchived;
+    var t=calcTotals(emp,entries,settings);
+    html+='<h2 class="'+(isArch?'archived-header':'')+'">'+emp.name+(isArch?' <span style="font-size:11px;font-weight:400;color:#9ca3af">[STOPPET '+formatDate(emp.stopDate||'')+' · '+emp.stopReason+']</span>':'')+' <span style="font-size:11px;font-weight:400">('+( emp.type==='deltid'?'Deltid':'Fuldtid')+')</span></h2>';
+    if(isArch)html+='<div class="archived-banner">📦 Arkiveret medarbejder – historiske data</div>';
+    html+='<div class="summary-box">';
+    if(t.normal>0)html+='<div class="sum-line"><span>Normale timer</span><span>'+t.normal.toFixed(2)+' t</span></div>';
+    if(t.evening>0)html+='<div class="sum-line"><span>Aftentimer</span><span>'+t.evening.toFixed(2)+' t</span></div>';
+    if(t.night>0)html+='<div class="sum-line"><span>Nattimer</span><span>'+t.night.toFixed(2)+' t</span></div>';
+    if(t.saturday>0)html+='<div class="sum-line"><span>Lørdagstimer</span><span>'+t.saturday.toFixed(2)+' t</span></div>';
+    if(t.sunday>0)html+='<div class="sum-line"><span>Søn/helligdagstimer</span><span>'+t.sunday.toFixed(2)+' t</span></div>';
+    if(t.ot1>0)html+='<div class="sum-line"><span>OT 1.-3. time</span><span>'+t.ot1.toFixed(2)+' t</span></div>';
+    if(t.ot2>0)html+='<div class="sum-line"><span>OT 4.+ time</span><span>'+t.ot2.toFixed(2)+' t</span></div>';
+    if(t.ferie>0)html+='<div class="sum-line"><span>Ferietimer</span><span>'+t.ferie.toFixed(2)+' t</span></div>';
+    if(t.feriefri>0)html+='<div class="sum-line"><span>Feriefridage</span><span>'+t.feriefri.toFixed(2)+' t</span></div>';
+    if(t.fravoer>0)html+='<div class="sum-line"><span>Fravær</span><span>'+t.fravoer.toFixed(2)+' t</span></div>';
+    if(t.friuden>0)html+='<div class="sum-line"><span>Fri u. løn</span><span>'+t.friuden.toFixed(2)+' t</span></div>';
+    html+='<div class="sum-line"><span>TOTAL</span><span>'+t.total.toFixed(2)+' t</span></div></div>';
+    html+='<table><thead><tr><th>Dato</th><th>Dag</th><th>Start</th><th>Slut</th><th>Timer</th><th>Type</th><th>Status</th><th>Note</th></tr></thead><tbody>';
+    for(var j=0;j<entries.length;j++){
+      var e=entries[j];var d=new Date(e.date);
+      var rowClass=e.approved?'':e.rejected?'row-rejected':'row-pending';
+      var statusHtml=e.approved?'<span class="status-approved">✅</span>':e.rejected?'<span class="status-rejected">❌</span>':'<span class="status-pending">😞</span>';
+      html+='<tr class="'+rowClass+'"><td>'+e.date+'</td><td>'+days[d.getDay()]+'</td><td>'+(e.start||'–')+'</td><td>'+(e.end||'–')+'</td><td><b>'+e.hours.toFixed(2)+'</b></td><td>'+(typeL[e.type]||e.type)+'</td><td>'+statusHtml+'</td><td>'+(e.note||'')+'</td></tr>';
+    }
+    html+='</tbody></table>';
+  }
+  html+='</body></html>';return html;
+}
+function downloadHTML(html,filename){var blob=new Blob([html],{type:'text/html;charset=utf-8'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},10000);}
+function exportPDF(){
+  var period=document.getElementById('expPeriod').value;if(!period){showToast('⚠️ Vælg en periode');return;}
+  downloadHTML(buildPDFHTML(period,document.getElementById('expEmp').value,document.getElementById('expFilter').value,document.getElementById('expArchived').value==='yes',getSettings()),'tidsreg_'+currentCompany.code+'_'+period+'.html');
+  showToast('📄 Åbn i browser → Udskriv → Gem som PDF');
+}
+function revisorExportPDF(){
+  var period=document.getElementById('revExpPeriod').value;if(!period){showToast('⚠️ Vælg en periode');return;}
+  downloadHTML(buildPDFHTML(period,document.getElementById('revExpEmp').value,document.getElementById('revExpFilter').value,document.getElementById('revExpArchived').value==='yes',getSettings()),'tidsreg_'+currentCompany.code+'_'+period+'_revisor.html');
+  showToast('📄 Åbn i browser → Udskriv → Gem som PDF');
+}
+
+// ═══════════════════════════════════════════════════════════
+// EMPLOYEES
+// ═══════════════════════════════════════════════════════════
 function renderEmployees(){
   var emps=getEmployees();
-  if(!emps.length){document.getElementById('empList').innerHTML='<p style="color:#9ca3af;font-size:14px">Ingen medarbejdere endnu.</p>';return;}
-  var html='<div class="table-wrap"><table><thead><tr><th>Nr.</th><th>Navn</th><th>Brugernavn</th><th>Type</th><th>Handling</th></tr></thead><tbody>'+
-    emps.map(function(e){return'<tr><td><strong style="color:#2563eb">'+(e.empNo||'–')+'</strong></td><td><strong>'+e.name+'</strong></td><td style="font-size:12px;color:#6b7280">'+e.username+'</td>'+
+  if(!emps.length){document.getElementById('empList').innerHTML='<p style="color:#9ca3af;font-size:14px">Ingen aktive medarbejdere endnu.</p>';return;}
+  var html='<div class="table-wrap"><table><thead><tr><th>Nr.</th><th>Navn</th><th>Brugernavn</th><th>Ansaettelse</th><th>Loentype</th><th>Afsp. saldo</th><th>Handling</th></tr></thead><tbody>'+
+    emps.map(function(e){
+      var flex=(e.flexBalance||0).toFixed(2);
+      var flexColor=e.flexBalance>0?'#16a34a':e.flexBalance<0?'#dc2626':'#6b7280';
+      return'<tr><td><strong style="color:#2563eb">'+(e.empNo||'–')+'</strong></td><td><strong>'+e.name+'</strong></td><td style="font-size:12px;color:#6b7280">'+e.username+'</td>'+
       '<td><span class="tag tag-'+e.type+'">'+(e.type==='deltid'?'Deltid':'Fuldtid')+'</span></td>'+
-      '<td><div style="display:flex;gap:6px;flex-wrap:wrap">'+
-        '<button class="btn btn-outline btn-sm" onclick="openEditEmp(\''+e.username+'\')">✏️ Rediger</button>'+
+      '<td><span class="tag tag-'+(e.empRole||'chauffor')+'">'+empRoleLabel(e.empRole)+'</span></td>'+
+      '<td><span style="font-weight:600;color:'+flexColor+'">'+flex+'t</span> <button onclick="openAdjustFlex(\''+e.username+'\',\''+e.name+'\','+(e.flexBalance||0)+')" style="background:none;border:none;color:#6b7280;cursor:pointer;font-size:12px;padding:0 4px" title="Justér saldo">✏️</button></td>'+
+      '<td><div style="display:flex;gap:4px;flex-wrap:wrap">'+
+        '<button class="btn btn-outline btn-sm" onclick="openEditEmp(\''+e.username+'\')">✏️</button>'+
         '<button class="btn btn-success btn-sm" onclick="exportLicense(\''+e.username+'\')">📲 Login-fil</button>'+
-        '<button class="btn btn-danger btn-sm" onclick="removeEmp(\''+e.username+'\')">Fjern</button>'+
+        '<button class="btn btn-danger btn-sm" onclick="openStopEmp(\''+e.username+'\')">🚫 Stop</button>'+
       '</div></td></tr>';}).join('')+
-    '</tbody></table></div><div class="alert alert-info" style="margin-top:12px">💡 Send Login-fil til medarbejderen til brug ved første login.</div>';
+    '</tbody></table></div>';
   document.getElementById('empList').innerHTML=html;
 }
+
 function exportLicense(username){
   var emps=getEmployees();var emp=null;for(var i=0;i<emps.length;i++){if(emps[i].username===username){emp=emps[i];break;}}
   if(!emp)return;
-  var payload={licenseVersion:1,username:emp.username,name:emp.name,role:emp.role||'',type:emp.type,password:emp.password||'',companyCode:currentCompany.code,companyName:currentCompany.name,empNo:emp.empNo||'',issuedAt:new Date().toISOString()};
+  var payload={licenseVersion:3,username:emp.username,name:emp.name,role:emp.role||'',type:emp.type,empRole:emp.empRole||'chauffor',companyCode:currentCompany.code,companyName:currentCompany.name,empNo:emp.empNo||'',active:true,issuedAt:new Date().toISOString()};
   var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='login_'+emp.username+'_'+currentCompany.code+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  showToast('📲 Login-fil til '+emp.name);
+  showToast('📲 Login-fil til '+emp.name+' (kodeord tastes ved login)');
 }
+
 function openAddEmp(){document.getElementById('addEmpModal').style.display='flex';}
 function closeAddEmp(){document.getElementById('addEmpModal').style.display='none';}
 function saveNewEmp(){
-  var empNo=document.getElementById('newEmpNo').value.trim();
-  var name=document.getElementById('newName').value.trim();
-  var user=document.getElementById('newUser').value.trim();
-  var pass=document.getElementById('newPass').value;
-  var type=document.getElementById('newType').value;
+  var empNo=document.getElementById('newEmpNo').value.trim();var name=document.getElementById('newName').value.trim();var user=document.getElementById('newUser').value.trim();var pass=document.getElementById('newPass').value;var type=document.getElementById('newType').value;var empRole=document.getElementById('newEmpRole').value;
   if(!name||!user||!pass){showToast('⚠️ Udfyld navn, brugernavn og kode');return;}
+  if(pass.length<4){showToast('⚠️ Kode skal vaere mindst 4 tegn');return;}
   var emps=getEmployees();for(var i=0;i<emps.length;i++){if(emps[i].username===user){showToast('⚠️ Brugernavn allerede i brug');return;}}
-  var empData={empNo:empNo,username:user,name:name,type:type,role:type==='deltid'?'Deltid':'Fuldtid',password:pass,companyCode:currentCompany.code};
-  employeesCol().doc(user).set(empData).then(function(){showToast('✅ '+name+' oprettet!');}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  sha256(pass).then(function(hashedPass){
+    employeesCol().doc(user).set({empNo:empNo,username:user,name:name,type:type,empRole:empRole,role:type==='deltid'?'Deltid':'Fuldtid',password:hashedPass,companyCode:currentCompany.code,active:true,hiredDate:todayStr()})
+      .then(function(){showToast('✅ '+name+' oprettet!');}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  });
   closeAddEmp();
   document.getElementById('newEmpNo').value='';document.getElementById('newName').value='';document.getElementById('newUser').value='';document.getElementById('newPass').value='';
 }
-// ── Edit Employee ─────────────────────────────────────────
-var editEmpTarget = null;
 function openEditEmp(username){
-  var emps=getEmployees();var emp=null;
-  for(var i=0;i<emps.length;i++){if(emps[i].username===username){emp=emps[i];break;}}
-  if(!emp)return;
-  editEmpTarget=username;
-  document.getElementById('editEmpNo').value=emp.empNo||'';
-  document.getElementById('editEmpName').value=emp.name||'';
-  document.getElementById('editEmpPass').value='';
-  document.getElementById('editEmpType').value=emp.type||'fuldtid';
+  var emps=getEmployees();var emp=null;for(var i=0;i<emps.length;i++){if(emps[i].username===username){emp=emps[i];break;}}
+  if(!emp)return;editEmpTarget=username;
+  document.getElementById('editEmpNo').value=emp.empNo||'';document.getElementById('editEmpName').value=emp.name||'';
+  document.getElementById('editEmpPass').value='';document.getElementById('editEmpType').value=emp.type||'fuldtid';
+  document.getElementById('editEmpRole').value=emp.empRole||'chauffor';
   document.getElementById('editEmpModal').style.display='flex';
 }
 function closeEditEmp(){document.getElementById('editEmpModal').style.display='none';editEmpTarget=null;}
 function saveEditEmp(){
   if(!editEmpTarget)return;
-  var empNo=document.getElementById('editEmpNo').value.trim();
-  var name=document.getElementById('editEmpName').value.trim();
-  var pass=document.getElementById('editEmpPass').value;
-  var type=document.getElementById('editEmpType').value;
-  if(!name){showToast('⚠️ Navn må ikke være tomt');return;}
-  var updates={empNo:empNo,name:name,type:type,role:type==='deltid'?'Deltid':'Fuldtid'};
-  if(pass) updates.password=pass;
-  employeesCol().doc(editEmpTarget).update(updates).then(function(){
-    showToast('✅ Medarbejder opdateret');closeEditEmp();
-  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  var empNo=document.getElementById('editEmpNo').value.trim();var name=document.getElementById('editEmpName').value.trim();var pass=document.getElementById('editEmpPass').value;var type=document.getElementById('editEmpType').value;var empRole=document.getElementById('editEmpRole').value;
+  if(!name){showToast('⚠️ Navn maa ikke vaere tomt');return;}
+  var updates={empNo:empNo,name:name,type:type,empRole:empRole,role:type==='deltid'?'Deltid':'Fuldtid'};
+  if(pass){
+    sha256(pass).then(function(h){updates.password=h;employeesCol().doc(editEmpTarget).update(updates).then(function(){showToast('✅ Opdateret');closeEditEmp();}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});});
+  } else {
+    employeesCol().doc(editEmpTarget).update(updates).then(function(){showToast('✅ Opdateret');closeEditEmp();}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  }
 }
 
-// ── Fix missed checkout (admin) ───────────────────────────
-var fixMissedData = null;
-function msToTime2(ms){var d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes());}
-function adminFixMissedBtn(btn){
-  var username=btn.getAttribute('data-username');
-  var startTime=parseInt(btn.getAttribute('data-starttime'));
-  var date=btn.getAttribute('data-date');
-  var dayType=btn.getAttribute('data-type');
-  var startStr=btn.getAttribute('data-start');
-  var name=btn.getAttribute('data-name');
-  adminFixMissed(username,startTime,date,dayType,startStr,name);
-}
-function adminFixMissed(username, startTime, date, dayType, startStr, empName){
+// ═══════════════════════════════════════════════════════════
+// FIX MISSED CHECKOUT
+// ═══════════════════════════════════════════════════════════
+function adminFixMissedBtn(btn){adminFixMissed(btn.getAttribute('data-username'),parseInt(btn.getAttribute('data-starttime')),btn.getAttribute('data-date'),btn.getAttribute('data-type'),btn.getAttribute('data-start'),btn.getAttribute('data-name'));}
+function adminFixMissed(username,startTime,date,dayType,startStr,empName){
   fixMissedData={username:username,startTime:startTime,date:date,dayType:dayType,startStr:startStr,name:empName};
-  var d=new Date(startTime);
-  var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  var d=new Date(startTime);var mo=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
   document.getElementById('fixMissedName').textContent=empName;
   document.getElementById('fixMissedDate').textContent=d.getDate()+'. '+mo[d.getMonth()];
   document.getElementById('fixMissedTime').value='';
@@ -938,316 +1722,344 @@ function adminFixMissed(username, startTime, date, dayType, startStr, empName){
 function closeFixMissed(){document.getElementById('fixMissedModal').style.display='none';fixMissedData=null;}
 function saveFixMissed(){
   if(!fixMissedData)return;
-  var t=document.getElementById('fixMissedTime').value;
-  if(!t){showToast('⚠️ Angiv et sluttidspunkt');return;}
-  var endDate=new Date(fixMissedData.startTime);
-  var parts=t.split(':');endDate.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
-  var hours=Math.max(0,Math.round(((endDate.getTime()-fixMissedData.startTime)/3600000)*100)/100);
-  var entry={
-    id:Date.now(),username:fixMissedData.username,name:fixMissedData.name,
-    date:fixMissedData.date,start:fixMissedData.startStr,end:t,hours:hours,
-    type:fixMissedData.dayType||'normal',method:'admin-fix',
-    note:'Rettet af admin: glemt udtjekning',approved:false
-  };
-  var batch=db.batch();
-  batch.set(entriesCol().doc(String(entry.id)),entry);
-  batch.set(checkinCol().doc(fixMissedData.username),{username:fixMissedData.username,checkedIn:false});
-  batch.commit().then(function(){
-    closeFixMissed();showToast('✅ Udtjekning rettet for '+fixMissedData.name);
-  }).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+  var t=document.getElementById('fixMissedTime').value;if(!t){showToast('⚠️ Angiv sluttidspunkt');return;}
+  var corrStart=applyMinStartTime(fixMissedData.startStr,currentCompany.code);
+  var startMs=fixMissedData.startTime;
+  if(corrStart!==fixMissedData.startStr){var p=corrStart.split(':');var d2=new Date(fixMissedData.startTime);d2.setHours(parseInt(p[0]),parseInt(p[1]),0,0);startMs=d2.getTime();}
+  var endDate=new Date(startMs);var parts=t.split(':');endDate.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
+  var hours=Math.max(0,Math.round(((endDate.getTime()-startMs)/3600000)*100)/100);
+  var entry={id:uid(),username:fixMissedData.username,name:fixMissedData.name,date:fixMissedData.date,start:corrStart,end:t,hours:hours,type:fixMissedData.dayType||'normal',method:'admin-fix',note:'',approved:false};
+  var batch=db.batch();batch.set(entriesCol().doc(String(entry.id)),entry);batch.set(checkinCol().doc(fixMissedData.username),{username:fixMissedData.username,checkedIn:false});
+  batch.commit().then(function(){closeFixMissed();showToast('✅ Udtjekning rettet for '+fixMissedData.name);}).catch(function(e){showToast('⚠️ Fejl: '+e.message);});
 }
 
-function removeEmp(username){
-  if(!confirm('Fjern medarbejder?'))return;
-  employeesCol().doc(username).delete().then(function(){showToast('🗑 Fjernet');}).catch(function(e){showToast('⚠️ Fejl');});
-}
-
-// ── Settings ──────────────────────────────────────────────
-function loadSettings(){
-  var s=getSettings();
-  document.getElementById('setOvens').value=s.ovens||'ka';
-  document.getElementById('setNorm').value=s.normalHours||7.4;
-  document.getElementById('setDayStart').value=s.dayStart||'05:00';
-  document.getElementById('setDayEnd').value=s.dayEnd||'18:00';
-  document.getElementById('setNightStart').value=s.nightStart||'22:00';
-  document.getElementById('setOTLimit').value=s.otLimit||3;
-  var preset=OVENS_PRESETS[s.ovens||'ka'];
-  if(preset){
-    var info=document.getElementById('ovensInfo');
-    info.style.background='#eff4ff';info.style.border='1px solid #bfdbfe';info.style.color='#2563eb';
-    info.textContent=preset.info;
-  }
-}
-function saveSettings(){
-  var s=gs();
-  s['settings_'+currentCompany.code]={
-    ovens:document.getElementById('setOvens').value,
-    normalHours:parseFloat(document.getElementById('setNorm').value)||7.4,
-    dayStart:document.getElementById('setDayStart').value||'05:00',
-    dayEnd:document.getElementById('setDayEnd').value||'18:00',
-    nightStart:document.getElementById('setNightStart').value||'22:00',
-    otLimit:parseFloat(document.getElementById('setOTLimit').value)||3
-  };
-  ss(s);showToast('⚙️ Indstillinger gemt');
-}
-function changePass(){
-  var curr=document.getElementById('setCurr').value;var newp=document.getElementById('setNew').value;
-  var s=gs();var key='admin_'+currentCompany.code;
-  var creds=s[key]||ADMIN_CREDS[currentCompany.code];
-  if(curr!==creds.password){showToast('⚠️ Forkert kode');return;}
-  if(newp.length<4){showToast('⚠️ Kode for kort');return;}
-  s[key]={username:creds.username,password:newp};ss(s);showToast('🔐 Kode ændret');
-  document.getElementById('setCurr').value='';document.getElementById('setNew').value='';
-}
-
-// ── Tabs ──────────────────────────────────────────────────
-function showTab(id,el){
-  var contents=document.querySelectorAll('.tab-content');for(var i=0;i<contents.length;i++)contents[i].classList.remove('active');
-  var tabs=document.querySelectorAll('.tab');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');el.classList.add('active');
-  if(id==='t-approve')renderApprove();if(id==='t-period')renderPeriod();
-  if(id==='t-employees')renderEmployees();if(id==='t-settings')loadSettings();
-}
-
-function pad(n){return n<10?'0'+n:''+n;}
-function timeToH(t){var p=t.split(':');return parseInt(p[0])+parseInt(p[1])/60;}
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2500);}
-
-// ── Excel Import ──────────────────────────────────────────
-var importParsedData = null;
-
-function parseDanskDato(s) {
-  // "20.02.2026" → "2026-02-20"
-  if (!s || typeof s !== 'string') return null;
-  var parts = s.trim().split('.');
-  if (parts.length === 3) return parts[2] + '-' + parts[1] + '-' + parts[0];
-  return null;
-}
-
-function parseExcelTime(val) {
-  // Excel time serial or string "09:50"
-  if (typeof val === 'number') {
-    var totalMin = Math.round(val * 24 * 60);
-    return pad(Math.floor(totalMin / 60)) + ':' + pad(totalMin % 60);
-  }
-  if (typeof val === 'string' && val.indexOf(':') > -1) return val.trim();
-  return null;
-}
-
-function normalizeName(n) {
-  return (n || '').toString().toLowerCase().trim().replace(/\s+/g, ' ');
-}
-
-function findEmployee(sheetName, employees) {
-  var sn = normalizeName(sheetName);
-  // Exact match first
-  for (var i = 0; i < employees.length; i++) {
-    if (normalizeName(employees[i].name) === sn) return employees[i];
-  }
-  // Partial match
-  for (var i = 0; i < employees.length; i++) {
-    var en = normalizeName(employees[i].name);
-    if (en.indexOf(sn) >= 0 || sn.indexOf(en) >= 0) return employees[i];
-  }
-  // Word-level match (first or last name)
-  var snWords = sn.split(' ');
-  for (var i = 0; i < employees.length; i++) {
-    var enWords = normalizeName(employees[i].name).split(' ');
-    for (var j = 0; j < snWords.length; j++) {
-      for (var k = 0; k < enWords.length; k++) {
-        if (snWords[j].length >= 3 && snWords[j] === enWords[k]) return employees[i];
+// ═══════════════════════════════════════════════════════════
+// IMPORT EXCEL
+// ═══════════════════════════════════════════════════════════
+function parseDanskDato(s){if(!s||typeof s!=='string')return null;var parts=s.trim().split('.');if(parts.length===3)return parts[2]+'-'+parts[1]+'-'+parts[0];return null;}
+function parseExcelTime(val){if(typeof val==='number'){var totalMin=Math.round(val*24*60);return pad(Math.floor(totalMin/60))+':'+pad(totalMin%60);}if(typeof val==='string'&&val.indexOf(':')>-1)return val.trim();return null;}
+function normalizeName(n){return(n||'').toString().toLowerCase().trim().replace(/\s+/g,' ');}
+function findEmployee(sheetName,employees){var sn=normalizeName(sheetName);for(var i=0;i<employees.length;i++){if(normalizeName(employees[i].name)===sn)return employees[i];}for(var i=0;i<employees.length;i++){var en=normalizeName(employees[i].name);if(en.indexOf(sn)>=0||sn.indexOf(en)>=0)return employees[i];}var snWords=sn.split(' ');for(var i=0;i<employees.length;i++){var enWords=normalizeName(employees[i].name).split(' ');for(var j=0;j<snWords.length;j++){for(var k=0;k<enWords.length;k++){if(snWords[j].length>=3&&snWords[j]===enWords[k])return employees[i];}}}return null;}
+function parseImportFile(){
+  if(typeof XLSX==='undefined'){showToast('⚠️ XLSX bibliotek ikke indlæst');return;}
+  var file=document.getElementById('importFile').files[0];if(!file){showToast('⚠️ Vælg en Excel-fil først');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:false});var employees=getEmployees();importParsedData=[];var previewHtml='';var totalRows=0,totalMatched=0,totalUnmatched=0;
+      for(var si=0;si<wb.SheetNames.length;si++){
+        var sheetName=wb.SheetNames[si];var ws=wb.Sheets[sheetName];var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        if(!rows||rows.length<5)continue;var firstCell=(rows[0][0]||'').toString();if(firstCell.indexOf('Periodeopsummering')>=0)continue;
+        var headerRow=-1;for(var r=0;r<Math.min(10,rows.length);r++){if((rows[r][0]||'').toString().indexOf('Dag')>=0&&(rows[r][1]||'').toString().indexOf('Dato')>=0){headerRow=r;break;}}
+        if(headerRow<0)continue;
+        var emp=findEmployee(sheetName,employees);var entries=[];
+        for(var r=headerRow+1;r<rows.length;r++){
+          var row=rows[r];var dag=(row[0]||'').toString().trim();var dato=(row[1]||'').toString().trim();var modt=row[2];var gaet=row[3];var pause=row[4];var nettoH=row[5];
+          if(!dato||dato===''||dag.indexOf('──')>=0||dag==='Dag'||dag==='TOTAL')continue;
+          if((nettoH||'').toString().indexOf('Fri')>=0||nettoH===''||nettoH===null)continue;
+          var dateStr=parseDanskDato(dato);if(!dateStr)continue;
+          var startStr=parseExcelTime(modt);var endStr=parseExcelTime(gaet);var breakMin=parseInt(pause)||0;
+          var hours=typeof nettoH==='number'?Math.round(nettoH*100)/100:parseFloat(nettoH)||0;if(hours<=0)continue;
+          entries.push({date:dateStr,start:startStr,end:endStr,hours:hours,breakMin:breakMin,type:'normal'});
+          totalRows++;if(emp)totalMatched++;else totalUnmatched++;
+        }
+        if(!entries.length)continue;
+        importParsedData.push({sheetName:sheetName,emp:emp,entries:entries});
+        var empStatus=emp?'✅ Matchet: <strong>'+emp.name+'</strong>':'⚠️ Ikke matchet';
+        previewHtml+='<div style="margin-bottom:12px;padding:12px;border-radius:10px;border:1px solid #e2e4ef;'+(emp?'':'background:#fffbeb;border-color:#fcd34d;')+'"><div style="font-weight:700;font-size:13px;margin-bottom:6px">📋 '+sheetName+' — '+empStatus+'</div><div style="font-size:12px;color:#6b7280">'+entries.length+' arbejdsdage</div></div>';
       }
-    }
-  }
-  return null;
-}
-
-function detectEmployeeType(typeCell) {
-  if (!typeCell) return null;
-  var t = typeCell.toString().toLowerCase();
-  if (t.indexOf('chauf') >= 0) return 'chauffør';
-  if (t.indexOf('medh') >= 0) return 'medhælper';
-  return t;
-}
-
-function parseImportFile() {
-  if (typeof XLSX === 'undefined') { showToast('⚠️ XLSX bibliotek ikke indlæst'); return; }
-  var file = document.getElementById('importFile').files[0];
-  if (!file) { showToast('⚠️ Vælg en Excel-fil først'); return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
-      var employees = getEmployees();
-      importParsedData = [];
-      var previewHtml = '';
-      var totalRows = 0, totalMatched = 0, totalUnmatched = 0;
-
-      for (var si = 0; si < wb.SheetNames.length; si++) {
-        var sheetName = wb.SheetNames[si];
-        var ws = wb.Sheets[sheetName];
-        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        if (!rows || rows.length < 5) continue;
-
-        // Detect if this is a "Periodeopsummering" summary sheet - skip those
-        var firstCell = (rows[0][0] || '').toString();
-        if (firstCell.indexOf('Periodeopsummering') >= 0) continue;
-
-        // Try to extract period and employee type from header rows
-        var empTypeLine = '';
-        var periodLine = '';
-        for (var r = 0; r < Math.min(6, rows.length); r++) {
-          var c0 = (rows[r][0] || '').toString();
-          if (c0.indexOf('Type:') >= 0) empTypeLine = c0;
-          if (c0.indexOf('Periode:') >= 0) periodLine = c0;
-        }
-
-        // Find the header row (Dag, Dato, Mødt, Gået, ...)
-        var headerRow = -1;
-        for (var r = 0; r < Math.min(10, rows.length); r++) {
-          if ((rows[r][0] || '').toString().indexOf('Dag') >= 0 && (rows[r][1] || '').toString().indexOf('Dato') >= 0) {
-            headerRow = r;
-            break;
-          }
-        }
-        if (headerRow < 0) continue;
-
-        var emp = findEmployee(sheetName, employees);
-        var empStatus = emp ? '✅ Matchet: <strong>' + emp.name + '</strong> (' + emp.username + ')' : '⚠️ Ikke matchet';
-        var empClass = emp ? '' : 'background:#fffbeb;border:1px solid #fcd34d;';
-        var entries = [];
-
-        for (var r = headerRow + 1; r < rows.length; r++) {
-          var row = rows[r];
-          var dag = (row[0] || '').toString().trim();
-          var dato = (row[1] || '').toString().trim();
-          var modt = row[2];
-          var gaet = row[3];
-          var pause = row[4];
-          var nettoH = row[5];
-
-          // Skip week headers, TOTAL, blank, Fri
-          if (!dato || dato === '' || dag.indexOf('──') >= 0 || dag === 'Dag' || dag === 'TOTAL') continue;
-          if ((nettoH || '').toString().indexOf('Fri') >= 0 || nettoH === '' || nettoH === null) continue;
-
-          var dateStr = parseDanskDato(dato);
-          if (!dateStr) continue;
-
-          var startStr = parseExcelTime(modt);
-          var endStr = parseExcelTime(gaet);
-          var breakMin = parseInt(pause) || 0;
-          var hours = typeof nettoH === 'number' ? Math.round(nettoH * 100) / 100 : parseFloat(nettoH) || 0;
-          if (hours <= 0) continue;
-
-          // Determine day type - Saturday gets type 'normal' (overtime handled by calcTillaeg)
-          var entryType = 'normal';
-
-          entries.push({ date: dateStr, start: startStr, end: endStr, hours: hours, breakMin: breakMin, type: entryType });
-          totalRows++;
-          if (emp) totalMatched++;
-          else totalUnmatched++;
-        }
-
-        if (entries.length === 0) continue;
-
-        importParsedData.push({ sheetName: sheetName, emp: emp, empTypeLine: empTypeLine, periodLine: periodLine, entries: entries });
-
-        // Build preview table
-        previewHtml += '<div style="margin-bottom:14px;padding:12px;border-radius:10px;border:1px solid #e2e4ef;' + empClass + '">';
-        previewHtml += '<div style="font-weight:700;font-size:13px;margin-bottom:6px">📋 ' + sheetName + ' — ' + empStatus + '</div>';
-        if (empTypeLine) previewHtml += '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">' + empTypeLine + (periodLine ? ' · ' + periodLine : '') + '</div>';
-        previewHtml += '<div style="font-size:12px;color:#6b7280;margin-bottom:8px">' + entries.length + ' arbejdsdage fundet</div>';
-        previewHtml += '<div class="table-wrap"><table><thead><tr><th>Dato</th><th>Start</th><th>Slut</th><th>Timer</th><th>Pause</th></tr></thead><tbody>';
-        for (var ei = 0; ei < Math.min(entries.length, 5); ei++) {
-          var en = entries[ei];
-          previewHtml += '<tr><td>' + en.date + '</td><td>' + (en.start || '–') + '</td><td>' + (en.end || '–') + '</td><td><strong>' + en.hours.toFixed(2) + '</strong></td><td>' + en.breakMin + ' min</td></tr>';
-        }
-        if (entries.length > 5) previewHtml += '<tr><td colspan="5" style="text-align:center;color:#9ca3af;font-size:11px">... og ' + (entries.length - 5) + ' flere rækker</td></tr>';
-        previewHtml += '</tbody></table></div></div>';
-      }
-
-      var summaryColor = totalUnmatched > 0 ? '#fffbeb' : '#f0fdf4';
-      var summaryBorder = totalUnmatched > 0 ? '#fcd34d' : '#6ee7b7';
-      var preview = document.getElementById('importPreview');
-      preview.style.display = 'block';
-      preview.innerHTML =
-        '<div style="background:' + summaryColor + ';border:1px solid ' + summaryBorder + ';border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px">' +
-        '<strong>Analyse komplet:</strong> ' + totalRows + ' rækker fundet · ' + totalMatched + ' rækker matchet · ' +
-        (totalUnmatched > 0 ? '<span style="color:#d97706">' + totalUnmatched + ' rækker uden medarbejder-match</span>' : '0 umatched') +
-        '</div>' + previewHtml;
-
-      var doBtn = document.getElementById('doImportBtn');
-      doBtn.style.display = totalMatched > 0 ? '' : 'none';
-    } catch(err) {
-      showToast('⚠️ Fejl ved læsning: ' + err.message);
-      console.error(err);
-    }
+      var preview=document.getElementById('importPreview');preview.style.display='block';
+      preview.innerHTML='<div style="background:#f0fdf4;border:1px solid #6ee7b7;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px"><strong>Analyse:</strong> '+totalRows+' rækker · '+totalMatched+' matchet · '+totalUnmatched+' umatched</div>'+previewHtml;
+      document.getElementById('doImportBtn').style.display=totalMatched>0?'':'none';
+    }catch(err){showToast('⚠️ Fejl: '+err.message);}
   };
   reader.readAsArrayBuffer(file);
 }
-
-function doImport() {
-  if (!importParsedData || !importParsedData.length) { showToast('⚠️ Ingen data at importere'); return; }
-  if (!confirm('Importér registreringer til Firestore? Eksisterende registreringer for de samme datoer overskrives IKKE (dubletter undgås automatisk).')) return;
-
-  var batch = db.batch();
-  var count = 0;
-  var skipped = 0;
-  var now = Date.now();
-
-  // Build a set of existing entry keys to avoid duplicates: "username_date"
-  var existingKeys = {};
-  for (var i = 0; i < allEntries.length; i++) {
-    existingKeys[allEntries[i].username + '_' + allEntries[i].date] = true;
+function doImport(){
+  if(!importParsedData||!importParsedData.length){showToast('⚠️ Ingen data');return;}
+  if(!confirm('Importér registreringer? Eksisterende for samme dato overskrives IKKE.'))return;
+  var batch=db.batch();var count=0;var skipped=0;
+  var existingKeys={};for(var i=0;i<allEntries.length;i++)existingKeys[allEntries[i].username+'_'+allEntries[i].date]=true;
+  for(var si=0;si<importParsedData.length;si++){
+    var sheet=importParsedData[si];if(!sheet.emp)continue;
+    for(var ei=0;ei<sheet.entries.length;ei++){var en=sheet.entries[ei];var key=sheet.emp.username+'_'+en.date;if(existingKeys[key]){skipped++;continue;}var entryId=uid();batch.set(entriesCol().doc(entryId),{id:entryId,username:sheet.emp.username,name:sheet.emp.name,date:en.date,start:en.start||'',end:en.end||'',hours:en.hours,breakMin:en.breakMin||0,type:en.type||'normal',method:'excel-import',approved:false,rejected:false,note:''});existingKeys[key]=true;count++;}
   }
+  if(!count){showToast('ℹ️ Ingen nye registreringer');return;}
+  batch.commit().then(function(){showToast('✅ '+count+' importeret'+(skipped?' ('+skipped+' sprunget over)':''));document.getElementById('doImportBtn').style.display='none';document.getElementById('importPreview').style.display='none';document.getElementById('importFile').value='';importParsedData=null;}).catch(function(err){showToast('⚠️ Fejl: '+err.message);});
+}
 
-  for (var si = 0; si < importParsedData.length; si++) {
-    var sheet = importParsedData[si];
-    if (!sheet.emp) continue;
+// ═══════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════
+function showTab(id,el){
+  document.querySelectorAll('#app .tab-content').forEach(function(c){c.classList.remove('active');});
+  document.querySelectorAll('#app .tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById(id).classList.add('active');el.classList.add('active');
+  if(id==='t-approve')renderApprove();if(id==='t-period')renderPeriod();
+  if(id==='t-employees')renderEmployees();if(id==='t-archive')renderArchive();
+  if(id==='t-settings')loadSettings();
+}
+function showRevisorTab(id,el){
+  document.querySelectorAll('#revisorApp .tab-content').forEach(function(c){c.classList.remove('active');});
+  document.querySelectorAll('#revisorApp .tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById(id).classList.add('active');el.classList.add('active');
+}
 
-    for (var ei = 0; ei < sheet.entries.length; ei++) {
-      var en = sheet.entries[ei];
-      var key = sheet.emp.username + '_' + en.date;
-      if (existingKeys[key]) { skipped++; continue; }
+// ═══════════════════════════════════════════════════════════
+// TIME CALCULATIONS
+// ═══════════════════════════════════════════════════════════
+function calcTillaeg(entry,settings,empRole){
+  empRole=empRole||'chauffor';
+  if(empRole==='montering'){return{normal:entry.hours,evening:0,night:0,saturday:0,sunday:0,ot1:0,ot2:0};}
+  if(!entry.start||!entry.end||entry.type!=='normal')return{normal:entry.hours,evening:0,night:0,saturday:0,sunday:0,ot1:0,ot2:0};
+  var date=new Date(entry.date);var isSat=date.getDay()===6;var isSun=date.getDay()===0||isHoliday(entry.date);
+  var startH=timeToH(entry.start);var endH=timeToH(entry.end);if(endH<=startH)endH+=24;
+  var dayStartH=timeToH(settings.dayStart||'05:00');var dayEndH=timeToH(settings.dayEnd||'18:00');var nightStartH=timeToH(settings.nightStart||'22:00');
+  var normalHours=settings.normalHours||7.4;var otLimit=settings.otLimit||3;
+  var normal=0,evening=0,night=0,saturday=0,sunday=0;
+  if(isSun){sunday=entry.hours;}
+  else if(isSat&&empRole!=='gls'){saturday=entry.hours;}
+  else{var step=0.25;for(var t=startH;t<endH;t+=step){var mid=t+step/2;if(mid>=24)mid-=24;if(mid<dayStartH||mid>=nightStartH)night+=step;else if(mid>=dayEndH)evening+=step;else normal+=step;}normal=Math.round(normal*100)/100;evening=Math.round(evening*100)/100;night=Math.round(night*100)/100;}
+  var otHours=Math.max(0,entry.hours-normalHours);var ot1=Math.min(otHours,otLimit);var ot2=Math.max(0,otHours-otLimit);
+  return{normal:normal,evening:evening,night:night,saturday:saturday,sunday:sunday,ot1:ot1,ot2:ot2};
+}
+function empRoleLabel(r){return{chauffor:'Chauffor',gls:'GLS',medhjaelper:'Medhjaelper',montering:'Montering'}[r]||'Chauffor';}
+function needsPauseWarning(e){return e.type==='normal'&&e.hours>6&&(!e.breakMin||e.breakMin===0)&&(e.method==='auto'||e.method==='missed-fix'||e.method==='admin-fix'||!e.method);}
 
-      var entryId = now + si * 10000 + ei;
-      var entry = {
-        id: entryId,
-        username: sheet.emp.username,
-        name: sheet.emp.name,
-        date: en.date,
-        start: en.start || '',
-        end: en.end || '',
-        hours: en.hours,
-        breakMin: en.breakMin || 0,
-        type: en.type || 'normal',
-        method: 'excel-import',
-        approved: false,
-        rejected: false,
-        note: 'Importeret fra Excel'
-      };
-      batch.set(entriesCol().doc(String(entryId)), entry);
-      existingKeys[key] = true;
-      count++;
-    }
-  }
-
-  if (count === 0) { showToast('ℹ️ Ingen nye registreringer at tilføje (alle allerede importeret)'); return; }
-
-  batch.commit().then(function() {
-    showToast('✅ ' + count + ' registreringer importeret!' + (skipped > 0 ? ' (' + skipped + ' sprunget over – eksisterer allerede)' : ''));
-    document.getElementById('doImportBtn').style.display = 'none';
-    document.getElementById('importPreview').style.display = 'none';
-    document.getElementById('importFile').value = '';
-    importParsedData = null;
-  }).catch(function(err) {
-    showToast('⚠️ Fejl ved import: ' + err.message);
-    console.error(err);
+// ═══════════════════════════════════════════════════════════
+// AFSPADSERING / FLEX SALDO
+// ═══════════════════════════════════════════════════════════
+function calcFlexEarned(entries,settings){
+  var normalHours=settings.normalHours||7.4;
+  return entries.filter(function(e){return e.approved&&e.type==='normal';})
+    .reduce(function(s,e){return s+Math.max(0,Math.round((e.hours-normalHours)*100)/100);},0);
+}
+function calcFlexUsed(entries){
+  return entries.filter(function(e){return e.approved&&e.type==='afspadsering';})
+    .reduce(function(s,e){return s+e.hours;},0);
+}
+function recomputeAllFlex(){
+  var emps=getEmployees();var settings=getSettings();
+  if(!emps.length){showToast('⚠️ Ingen medarbejdere');return;}
+  var resultEl=document.getElementById('flexResult');
+  resultEl.innerHTML='<div style="color:#6b7280;font-size:13px">⏳ Genberegner...</div>';
+  var batch=db.batch();var count=0;
+  emps.forEach(function(emp){
+    var entries=allEntries.filter(function(e){return e.username===emp.username;});
+    var earned=calcFlexEarned(entries,settings);
+    var used=calcFlexUsed(entries);
+    var balance=Math.round((earned-used)*100)/100;
+    batch.update(employeesCol().doc(emp.username),{flexBalance:balance,flexLastRecomputed:new Date().toISOString()});
+    count++;
   });
+  batch.commit().then(function(){
+    resultEl.innerHTML='<div style="padding:8px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:13px;color:#166534">✅ Saldo genberegnet for '+count+' medarbejder'+(count!==1?'e':'')+'.</div>';
+    showToast('✅ Saldi opdateret');
+  }).catch(function(e){resultEl.innerHTML='<div style="color:#dc2626;font-size:13px">⚠️ Fejl: '+e.message+'</div>';});
+}
+function closePeriodFlex(){
+  var period=document.getElementById('perPeriod').value;
+  if(!period){showToast('⚠️ Vælg en lønperiode først');return;}
+  if(!confirm('Afslut lønperiode '+period+' og opdater afspadseringssaldi?\n\nDette genberegner saldo for alle medarbejdere baseret på godkendte registreringer.'))return;
+  recomputeAllFlex();
+}
+var _adjustFlexTarget=null;
+function openAdjustFlex(username,name,current){
+  _adjustFlexTarget={username:username,name:name};
+  document.getElementById('adjustFlexName').textContent=name;
+  document.getElementById('adjustFlexVal').value=current.toFixed(2);
+  document.getElementById('adjustFlexModal').style.display='flex';
+}
+function closeAdjustFlex(){document.getElementById('adjustFlexModal').style.display='none';_adjustFlexTarget=null;}
+function saveAdjustFlex(){
+  if(!_adjustFlexTarget)return;
+  var val=parseFloat(document.getElementById('adjustFlexVal').value);
+  if(isNaN(val)){showToast('⚠️ Ugyldig vaerdi');return;}
+  employeesCol().doc(_adjustFlexTarget.username).update({flexBalance:Math.round(val*100)/100,flexManualAdjust:new Date().toISOString()})
+    .then(function(){showToast('✅ Saldo opdateret for '+_adjustFlexTarget.name);closeAdjustFlex();})
+    .catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+function getEaster(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,month-1,day);}
+function addDays(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function isHoliday(ds){var d=new Date(ds);var m=d.getMonth()+1,day=d.getDate(),y=d.getFullYear();if((m===1&&day===1)||(m===12&&[24,25,26,31].indexOf(day)>=0))return true;var easter=getEaster(y);var dates=[easter,addDays(easter,1),addDays(easter,-3),addDays(easter,-2),addDays(easter,39),addDays(easter,49),addDays(easter,50)];for(var i=0;i<dates.length;i++){if(dates[i].toISOString().split('T')[0]===ds)return true;}return false;}
+
+function pad(n){return n<10?'0'+n:''+n;}
+function timeToH(t){var p=t.split(':');return parseInt(p[0])+parseInt(p[1])/60;}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},2800);}
+
+</script>
+
+<!-- Juster afspadsering modal -->
+<div id="adjustFlexModal" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-title">🔄 Justér afspadseringssaldo</div>
+    <p id="adjustFlexName" style="font-weight:600;margin-bottom:12px"></p>
+    <div class="form-group"><label>Saldo (timer)</label>
+      <input type="number" id="adjustFlexVal" step="0.25" inputmode="decimal">
+    </div>
+    <p style="font-size:12px;color:#9ca3af;margin-top:6px">Positiv = timer til gode. Negativ = gæld.</p>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn btn-outline" onclick="closeAdjustFlex()">Annuller</button>
+      <button class="btn btn-primary" onclick="saveAdjustFlex()">Gem</button>
+    </div>
+  </div>
+</div>
+
+<!-- Glemt kode modal -->
+<div id="forgotModal" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">🔑 Glemt adgangskode</div>
+    <div id="forgotStep1">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">En 6-cifret kode sendes til din recovery-email. Koden udloeber efter 15 minutter.</p>
+      <div class="form-group"><label>Virksomhedskode</label>
+        <input type="text" id="forgotCompanyCode" placeholder="F.eks. PP001" style="text-transform:uppercase">
+      </div>
+      <div id="forgotErr" style="display:none;color:#dc2626;font-size:13px;margin-top:8px"></div>
+      <div class="modal-btns" style="margin-top:16px">
+        <button class="btn btn-outline" onclick="closeForgot()">Annuller</button>
+        <button class="btn btn-primary" onclick="sendResetCode()">📧 Send kode</button>
+      </div>
+    </div>
+    <div id="forgotStep2" style="display:none">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Indtast den 6-cifrede kode fra din email og vaelg en ny adgangskode.</p>
+      <div class="form-group"><label>Reset-kode (fra email)</label>
+        <input type="text" id="forgotCode" placeholder="123456" maxlength="6" inputmode="numeric">
+      </div>
+      <div class="form-group" style="margin-top:10px"><label>Ny adgangskode</label>
+        <input type="password" id="forgotNewPass" placeholder="Mindst 6 tegn">
+      </div>
+      <div id="forgotErr2" style="display:none;color:#dc2626;font-size:13px;margin-top:8px"></div>
+      <div class="modal-btns" style="margin-top:16px">
+        <button class="btn btn-outline" onclick="closeForgot()">Annuller</button>
+        <button class="btn btn-primary" onclick="confirmResetCode()">✅ Skift kode</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════════
+// EMAILJS KONFIGURATION - UDFYLD DISSE EFTER OPRETTELSE PAA emailjs.com
+// ═══════════════════════════════════════════════════════════
+var EMAILJS_PUBLIC_KEY  = '';  // Din EmailJS Public Key
+var EMAILJS_SERVICE_ID  = '';  // Dit EmailJS Service ID
+var EMAILJS_TEMPLATE_ID = 'mintid_reset'; // EmailJS Template ID
+
+function emailjsReady(){return EMAILJS_PUBLIC_KEY&&EMAILJS_SERVICE_ID&&EMAILJS_TEMPLATE_ID;}
+
+// ── Recovery email ─────────────────────────────────────────
+function saveRecoveryEmail(){
+  var email=document.getElementById('setRecoveryEmail').value.trim();
+  if(!email||!email.includes('@')){showToast('⚠️ Ugyldig email');return;}
+  if(!emailjsReady()){document.getElementById('emailjsSetup').style.display='block';}
+  db.collection('companies').doc(currentCompany.code).collection('config').doc('settings')
+    .set({recoveryEmail:email},{merge:true})
+    .then(function(){showToast('✅ Recovery email gemt: '+email);})
+    .catch(function(e){showToast('⚠️ Fejl: '+e.message);});
+}
+function loadRecoveryEmail(){
+  db.collection('companies').doc(currentCompany.code).collection('config').doc('settings')
+    .get().then(function(doc){
+      if(doc.exists&&doc.data().recoveryEmail){
+        document.getElementById('setRecoveryEmail').value=doc.data().recoveryEmail;
+      }
+      if(!emailjsReady())document.getElementById('emailjsSetup').style.display='block';
+    }).catch(function(){});
+}
+
+// ── Forgot password flow ───────────────────────────────────
+var _resetCompanyCode='';
+var _resetTokenId='';
+
+function openForgot(){
+  var code=document.getElementById('companyCodeInput')?document.getElementById('companyCodeInput').value.trim().toUpperCase():'';
+  document.getElementById('forgotCompanyCode').value=code||'';
+  document.getElementById('forgotStep1').style.display='block';
+  document.getElementById('forgotStep2').style.display='none';
+  document.getElementById('forgotErr').style.display='none';
+  document.getElementById('forgotModal').style.display='flex';
+}
+function closeForgot(){
+  document.getElementById('forgotModal').style.display='none';
+  document.getElementById('forgotCode').value='';
+  document.getElementById('forgotNewPass').value='';
+}
+
+function sendResetCode(){
+  var code=document.getElementById('forgotCompanyCode').value.trim().toUpperCase();
+  var errEl=document.getElementById('forgotErr');
+  if(!code){errEl.style.display='';errEl.textContent='Indtast virksomhedskode.';return;}
+  if(!COMPANIES[code]){errEl.style.display='';errEl.textContent='Ukendt virksomhedskode.';return;}
+  if(!emailjsReady()){errEl.style.display='';errEl.textContent='Email-service er ikke konfigureret. Kontakt system administrator.';return;}
+  _resetCompanyCode=code;
+  // Hent recovery email fra Firestore
+  db.collection('companies').doc(code).collection('config').doc('settings').get().then(function(doc){
+    if(!doc.exists||!doc.data().recoveryEmail){
+      errEl.style.display='';errEl.textContent='Ingen recovery email registreret for denne virksomhed. Kontakt system administrator.';return;
+    }
+    var recoveryEmail=doc.data().recoveryEmail;
+    var resetCode=Math.floor(100000+Math.random()*900000).toString();
+    sha256(resetCode).then(function(codeHash){
+      var tokenId='reset_'+code+'_'+Date.now();
+      _resetTokenId=tokenId;
+      var token={codeHash:codeHash,companyCode:code,createdAt:Date.now(),expiresAt:Date.now()+15*60*1000,used:false};
+      db.collection('companies').doc(code).collection('resetTokens').doc(tokenId).set(token).then(function(){
+        // Send email via EmailJS
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+        return emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+          to_email:recoveryEmail,
+          company_code:code,
+          company_name:COMPANIES[code].name,
+          reset_code:resetCode,
+          expires_in:'15 minutter'
+        });
+      }).then(function(){
+        var maskedEmail=recoveryEmail.replace(/(.{2}).*(@.*)/,'$1***$2');
+        errEl.style.display='none';
+        document.getElementById('forgotStep1').style.display='none';
+        document.getElementById('forgotStep2').style.display='block';
+        showToast('📧 Kode sendt til '+maskedEmail);
+      }).catch(function(e){
+        errEl.style.display='';errEl.textContent='Kunne ikke sende email. Prøv igen eller kontakt system administrator.';
+        console.error('EmailJS fejl:',e);
+      });
+    });
+  }).catch(function(){errEl.style.display='';errEl.textContent='Netvaerksfejl – prov igen.';});
+}
+
+function confirmResetCode(){
+  var inputCode=document.getElementById('forgotCode').value.trim();
+  var newPass=document.getElementById('forgotNewPass').value;
+  var errEl=document.getElementById('forgotErr2');
+  if(inputCode.length!==6){errEl.style.display='';errEl.textContent='Koden skal vaere 6 cifre.';return;}
+  if(newPass.length<6){errEl.style.display='';errEl.textContent='Ny kode skal vaere mindst 6 tegn.';return;}
+  db.collection('companies').doc(_resetCompanyCode).collection('resetTokens').doc(_resetTokenId).get().then(function(doc){
+    if(!doc.exists){errEl.style.display='';errEl.textContent='Ugyldig reset-session. Start forfra.';return;}
+    var token=doc.data();
+    if(token.used){errEl.style.display='';errEl.textContent='Denne kode er allerede brugt.';return;}
+    if(Date.now()>token.expiresAt){errEl.style.display='';errEl.textContent='Koden er udloebet (15 min). Start forfra.';return;}
+    sha256(inputCode).then(function(h){
+      if(h!==token.codeHash){errEl.style.display='';errEl.textContent='Forkert kode. Tjek din email.';return;}
+      // Kode korrekt - sæt ny adgangskode
+      sha256(newPass).then(function(newHash){
+        var s=gs();var key='admin_'+_resetCompanyCode;
+        var existing=s[key]||ADMIN_DEFAULTS[_resetCompanyCode];
+        s[key]={username:existing.username,password:newHash};ss(s);
+        // Marker token som brugt
+        doc.ref.update({used:true});
+        showToast('✅ Adgangskode nulstillet! Log ind med din nye kode.');
+        closeForgot();
+        _resetCompanyCode='';_resetTokenId='';
+      });
+    });
+  }).catch(function(){errEl.style.display='';errEl.textContent='Netvaerksfejl – prov igen.';});
 }
 
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw-arbejdsgiver.js',{scope:'./'}).catch(function(e){console.log('SW:',e);});});}
 </script>
+<footer style="text-align:center;padding:18px 16px 24px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:32px">
+  Copyright &copy; <a href="mailto:info@smartapps.dk" style="color:#9ca3af;text-decoration:none">smartapps</a> &nbsp;|&nbsp; <a href="mailto:info@smartapps.dk" style="color:#9ca3af;text-decoration:none">info@smartapps.dk</a>
+</footer>
 </body>
 </html>
-
